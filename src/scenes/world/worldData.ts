@@ -4,7 +4,7 @@ import { chroma, lch, oklabToSrgb, rgbToHex, hexToOklab, mixLab } from './oklab'
 /**
  * 省域静态数据 + 视图模型（工单 M3-WO2 §2.1）。
  * 内容包接入前的占位：原版 worldmap_overlays/MapPlaceN.png 作为省片的轮廓与纸面纹理，
- * 位置是手工摆的近似拼图（原版没有导出摆位表），`center` 单位 = 原图像素，y 向下。
+ * 位置由 tools/map/solve_layout.py 按边缘拼合求出（原版没有导出摆位表），`center` 单位 = 原图像素，y 向下。
  * 接入真实 provinces.json / map-layout.json 后替换 PLACE_LAYOUT 即可，场景代码不改。
  */
 export interface PlaceDef {
@@ -28,21 +28,21 @@ const OVERLAY = '/assets/map_terrain/map_terrain/worldmap_overlays/';
 
 /** [MapPlace 编号, 中心 x, 中心 y, 档高, 势力]。编号 i 对应原版地名表 id i+1。 */
 const RAW: Array<[number, number, number, number, string]> = [
-  [10, 330, 760, 1, 'west'],    // 秦州
-  [9, 1960, 170, 2, 'north'],   // 辽阳
-  [4, 1040, 350, 2, 'north'],   // 太原
-  [0, 1500, 430, 3, 'north'],   // 京城
-  [6, 1880, 560, 1, 'east'],    // 青州
-  [3, 1080, 790, 2, 'center'],  // 襄阳
-  [12, 1560, 880, 1, 'center'], // 寿春
-  [14, 1930, 900, 0, 'east'],   // 扬州
-  [1, 610, 1300, 1, 'west'],    // 成都
-  [7, 1090, 1170, 3, 'center'], // 江陵
-  [13, 1960, 1170, 2, 'east'],  // 杭州
-  [11, 470, 1720, 2, 'south'],  // 大理
-  [2, 1000, 1700, 0, 'south'],  // 桂州
-  [5, 1470, 1640, 1, 'south'],  // 广州
-  [8, 1830, 1470, 3, 'east'],   // 福州
+  [10, 308, 892, 1, 'west'],    // 秦州
+  [9, 1742, 162, 2, 'north'],   // 辽阳
+  [4, 890, 394, 2, 'north'],   // 太原
+  [0, 1314, 414, 3, 'north'],   // 京城
+  [6, 1634, 402, 1, 'east'],    // 青州
+  [3, 1024, 766, 2, 'center'],  // 襄阳
+  [12, 1438, 858, 1, 'center'], // 寿春
+  [14, 1656, 692, 0, 'east'],   // 扬州
+  [1, 728, 996, 1, 'west'],    // 成都
+  [7, 1198, 1092, 3, 'center'], // 江陵
+  [13, 1734, 940, 2, 'east'],  // 杭州
+  [11, 862, 1628, 2, 'south'],  // 大理
+  [2, 1000, 1358, 0, 'south'],  // 桂州
+  [5, 1394, 1346, 1, 'south'],  // 广州
+  [8, 1474, 1622, 3, 'east'],   // 福州
 ];
 
 /** 色相环均匀取强调色：从 L=0.62 向两侧找最近的能在 sRGB 内保持 C ≥ 0.13 的明度（§5）。 */
@@ -56,21 +56,18 @@ function accentFor(h: number): string {
   return rgbToHex(oklabToSrgb(lch(0.5, 0.14, h)));
 }
 
-/** 手摆坐标整体向中心收拢的系数（让片与片之间只留窄缝）。 */
-const PACK = 0.84, CX = 1150, CY = 975;
-
 export const PLACES: PlaceDef[] = RAW.map(([n, x0, y0, layer, faction], i) => ({
   id: `p${n}`,
   nameKey: `province.${n}`,
   image: `${OVERLAY}MapPlace${n}.png`,
-  center: [CX + (x0 - CX) * PACK, CY + (y0 - CY) * PACK],
+  center: [x0, y0],
   layerHeight: layer,
   accentColor: accentFor((i / RAW.length) * Math.PI * 2 + 0.4),
   faction,
 }));
 
 export const MAP_LAYOUT: MapLayoutLite = {
-  size: [2300, 1950],
+  size: [2100, 1900],
   backdrop: '#d9c9a6',
   clouds: [
     { image: `${OVERLAY}MapCloud_0.png`, at: [600, 300], scale: 1.2, parallax: 0.2 },
