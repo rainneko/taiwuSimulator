@@ -6,6 +6,7 @@ data/wiki/text/
 data/wiki/templates/
 data/wiki/modules/
 data/wiki/data_ns/
+data/wiki/images/
 
 # Keep these tracked
 !data/wiki/index.json

@@ -13,7 +13,7 @@
 
 ```bash
 npm create vite@latest . -- --template vanilla-ts
-npm i three @types/three
+npm i -E three@0.187.0 @types/three@0.187.0
 npm i -D vitest @vitest/coverage-v8 eslint typescript
 ```
 

@@ -520,12 +520,12 @@ export class ParallaxBackground {
 
 ```ts
 // src/render/PaperMaterial.ts
-// 完整实现见 v1.0 工单 §3，此处不重复
+// 权威实现见 M3-WO1 §2.1（docs/work-orders/M3-WO1-paper-kit-main-ui.md），此处不重复
 // 关键 uniforms: uPaperFibreTex, uPaperFibre, uPaperLight, uPaperTransTint
 // 效果：纤维纹理(triplanar UV)、wrap diffuse、背光透射
 ```
 
-纤维纹理生成器同 v1.0 工单 §3.2，程序生成 512×512 RGBA 纹理。
+纤维纹理生成器同 M3-WO1 §2.1，程序生成 512×512 RGBA 纹理。
 
 ---
 
