@@ -1,0 +1,37 @@
+# Large crawled data (wikitext, HTML, XML)
+data/wiki/raw/
+data/wiki/import/
+data/wiki/meta/
+data/wiki/text/
+data/wiki/templates/
+data/wiki/modules/
+data/wiki/data_ns/
+
+# Keep these tracked
+!data/wiki/index.json
+!data/wiki/images_manifest.json
+!data/wiki/CRAWL_REPORT.md
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SSL certs (temporary)
+*.key
+*.crt
+*.pem
