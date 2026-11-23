@@ -12,6 +12,9 @@ data/wiki/data_ns/
 !data/wiki/images_manifest.json
 !data/wiki/CRAWL_REPORT.md
 
+# Spine game assets (original game resources, not for distribution)
+assets/spine/
+
 # Node
 node_modules/
 
