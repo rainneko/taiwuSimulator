@@ -6,6 +6,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         paper: fileURLToPath(new URL('./dev/paper.html', import.meta.url)),
+        combat: fileURLToPath(new URL('./dev/combat.html', import.meta.url)),
       },
     },
   },
