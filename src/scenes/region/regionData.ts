@@ -5,7 +5,8 @@ export interface RegionData {
   id: string;
   name: string;
   provinceId?: string;
-  size: number;                  // N（≤ 30）
+  size: number;                  // N：省会 / 门派地区 15，乡村地区 10（数据驱动，不写死）
+  seed?: number;                 // 地区种子：交界扭曲相位、布置哈希
   ground: Uint8Array;            // 每格地面类型 0–15
   variant: Uint8Array;           // 每格变体随机字节
   locations: RegionLocation[];
@@ -28,7 +29,7 @@ export function regionCost(r: RegionData, cell: number): number {
 }
 
 /** 程序生成的示例地区：值噪声分带出地形，再撒几个聚居点。 */
-export function makeSampleRegion(size = 24, seed = 7): RegionData {
+export function makeSampleRegion(size = 15, seed = 7): RegionData {
   const rnd = mulberry32(seed);
   const n = Math.min(30, size);
   // 粗网格值噪声 + 双线性
@@ -41,7 +42,8 @@ export function makeSampleRegion(size = 24, seed = 7): RegionData {
       return top * (1 - ty) + bot * ty;
     };
   };
-  const height = coarse(6), moist = coarse(5), detail = coarse(2);
+  const sc = n / 24;
+  const height = coarse(Math.max(2, 6 * sc)), moist = coarse(Math.max(2, 5 * sc)), detail = coarse(1.5);
   const ground = new Uint8Array(n * n), variant = new Uint8Array(n * n);
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const hgt = height(x, y) * 0.8 + detail(x, y) * 0.2, wet = moist(x, y);
@@ -62,18 +64,20 @@ export function makeSampleRegion(size = 24, seed = 7): RegionData {
     variant[y * n + x] = (rnd() * 256) | 0;
   }
   // 聚居点：挑可通行、彼此不太近的格子
-  const wanted: Array<[number, string]> = [[33, '城'], [19, '门派'], [49, '市镇'], [50, '关寨'], [48, '村庄'], [48, '村庄'], [47, '太吾村']];
+  const wanted: Array<[number, string]> = n >= 15
+    ? [[33, '城'], [19, '门派'], [49, '市镇'], [48, '村庄'], [47, '太吾村']]
+    : [[48, '村庄'], [50, '关寨'], [47, '太吾村']];
   const locations: RegionLocation[] = [];
   let guard = 0;
   while (locations.length < wanted.length && guard++ < 5000) {
     const c = (rnd() * n * n) | 0, x = c % n, y = (c / n) | 0;
     if (x < 1 || y < 1 || x > n - 2 || y > n - 2) continue;
     if (!isFinite(MOVE_COST[ground[c]])) continue;
-    if (locations.some((l) => Math.abs(l.cell % n - x) + Math.abs(((l.cell / n) | 0) - y) < Math.max(4, n / 5))) continue;
+    if (locations.some((l) => Math.abs(l.cell % n - x) + Math.abs(((l.cell / n) | 0) - y) < Math.max(3, n / 4))) continue;
     const [type, name] = wanted[locations.length];
     ground[c] = SETTLEMENT_GROUND;
     locations.push({ cell: c, type, name });
   }
   const home = locations.find((l) => l.type === 47) ?? locations[0];
-  return { id: `sample-${seed}`, name: '示例地区', size: n, ground, variant, locations, playerCell: home?.cell ?? 0 };
+  return { id: `sample-${seed}`, name: '示例地区', size: n, seed, ground, variant, locations, playerCell: home?.cell ?? 0 };
 }

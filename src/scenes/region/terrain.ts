@@ -49,3 +49,15 @@ for (const e of byType.values()) e.urls = e.urls.filter(Boolean);
 /** 某地形编号的变体 URL 列表（可能为空：零素材时走占位）。 */
 export function terrainUrls(type: number): string[] { return byType.get(type)?.urls ?? []; }
 export function terrainName(type: number): string { return byType.get(type)?.name ?? TERRAIN_NAMES[type] ?? `#${type}`; }
+
+/** 原版 0–15 号 → WO3 的地形键。 */
+export const TERRAIN_KEYS: readonly string[] = [
+  'mountain', 'canyon', 'hill', 'plain', 'woods', 'farmland', 'garden', 'stoneForest',
+  'mulberry', 'herbGarden', 'lake', 'jungle', 'cave', 'marsh', 'vale', 'waste',
+];
+
+/** 叠放次序（WO3 §3.2.1）：水最低、山最高。 */
+export const STACK: readonly number[] = [120, 100, 90, 60, 80, 50, 60, 110, 50, 50, 20, 85, 100, 30, 60, 60];
+
+/** 水面地形（WO3 v1.1：起步只有湖泊）。 */
+export const WATER: readonly boolean[] = TERRAIN_KEYS.map((k) => k === 'lake');

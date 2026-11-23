@@ -47,7 +47,7 @@ function drawLabels(): void {
     labels.replaceChildren(...r.locations.map((l) => Object.assign(document.createElement('span'), { textContent: l.name })));
   }
   r.locations.forEach((l, i) => {
-    region.cellCenter(l.cell, v); v.y = 1.6; v.z -= 0.2;
+    region.cellCenter(l.cell, v); v.y = 1.3; v.z -= 0.2;
     v.project(region.rig.camera);
     const el = labels.children[i] as HTMLElement;
     el.style.left = `${(v.x * 0.5 + 0.5) * innerWidth}px`;
@@ -69,5 +69,5 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-void scenes.goto('region', { region: makeSampleRegion(24, seed++) });
+void scenes.goto('region', { region: makeSampleRegion(15, seed++) });
 Object.assign(window as object, { __region: region });

@@ -6,11 +6,16 @@ import type { AssetCache } from '../../app/AssetCache';
 import type { ScenePointerEvent } from '../../app/InputRouter';
 import type { IScene, NdcRect } from '../../app/SceneManager';
 import type { Screen } from '../../app/store';
-import { createPaperMaterial, makeCardGeometry, PaperCard } from '../../render/paper';
+import { createPaperMaterial, makeCardGeometry, PaperBatch, PaperCard, type Atlas } from '../../render/paper';
+import { HingeState } from '../../render/paper/hinge';
+import { DETAIL_PER_CELL, dressRegion, LOCATION_SIZE, MAX_MAIN, type Placement } from './dressing';
+import { makePlaceholderAtlas } from './placeholderArt';
+import { Visibility } from './Visibility';
+import { warpPhase } from './warp';
 import { buildGroundAtlas } from './GroundAtlas';
 import { GridGround, Hl } from './GridGround';
 import { findPath, pathCost } from './pathfinding';
-import { RegionCamera, ZOOM_DIST } from './RegionCamera';
+import { RegionCamera, Zoom } from './RegionCamera';
 import { makeSampleRegion, regionCost, type RegionData, type RegionLocation } from './regionData';
 import { locationKind, terrainName, terrainUrls } from './terrain';
 
@@ -24,7 +29,10 @@ export interface CellInfo {
 }
 
 const HOP_MS = 170, HOP_ARC = 0.22;
-const STANDEE_W = 1.0, STANDEE_ASPECT = 831 / 512;
+const STANDEE_ASPECT = 831 / 512;
+/** 地面纸纹：远档 0.22 → 中档 0.28 → 近档 0.35。 */
+const FIBRE_FAR = 0.22, FIBRE_MID = 0.28, FIBRE_NEAR = 0.35;
+const DETAIL_FOLD_S = 0.3;
 
 /** 地区格子地图。 */
 export class RegionScene implements IScene {
@@ -33,8 +41,18 @@ export class RegionScene implements IScene {
   readonly rig = new RegionCamera();
   region: RegionData | null = null;
   ground: GridGround | null = null;
-  /** 地点立牌（WO3 之后可换成 PaperBatch）。 */
+  /** 地点立牌（原版 16–51 号图）。 */
   standees: PaperCard[] = [];
+  /** 地形主体立牌（WO3 挂点）。 */
+  terrainBatch: PaperBatch | null = null;
+  /** 填充小件 + 地面散件；远档折平隐藏。 */
+  detailBatch: PaperBatch | null = null;
+  vis: Visibility | null = null;
+  private art: Atlas | null = null;
+  private fillerHandles: number[] = [];
+  private flatHandles: number[] = [];
+  private detailShown = true;
+  private detailHideAt = -1;
   token: PaperCard | null = null;
 
   /** 外部（HUD / dev 页）订阅：选中格变化、玩家移动。 */
@@ -70,11 +88,12 @@ export class RegionScene implements IScene {
   // ── IScene ──
   async preload(_assets: AssetCache, signal: AbortSignal): Promise<void> {
     if (!this.atlas) this.atlas = await buildGroundAtlas(signal);
+    this.art ??= makePlaceholderAtlas();   // 真实图集接入前的占位
   }
 
   enter(params: unknown, _from: Screen | null): void {
     const p = (params ?? {}) as RegionEnterParams;
-    this.build(p.region ?? makeSampleRegion(24, hashStr(p.regionId ?? 'sample')));
+    this.build(p.region ?? makeSampleRegion(15, hashStr(p.regionId ?? 'sample')));
   }
 
   exit(_to: Screen): void { this.walk = null; this.setHover(-1); }
@@ -86,16 +105,22 @@ export class RegionScene implements IScene {
     for (const s of this.standees) s.update(dt);
     this.token?.update(dt);
     this.rig.update(dt);
-    // 阴影相机跟着视野中心
-    const t = this.rig.target;
-    this.sun.target.position.copy(t);
-    this.sun.position.set(t.x - 6, 12, t.z + 4);
+    this.vis?.update(dt);
+    this.updateDetailLayer();
+    this.terrainBatch?.update(dt);
+    this.detailBatch?.update(dt);
+    const c = this.rig.closeness();
+    this.ground?.setFibre(c < 0.5 ? FIBRE_FAR + (FIBRE_MID - FIBRE_FAR) * c * 2 : FIBRE_MID + (FIBRE_NEAR - FIBRE_MID) * (c - 0.5) * 2);
+    this.fitShadow();
     this.intro += dt;
     this.ground?.flush();
   }
 
   render(r: WebGLRenderer, target: WebGLRenderTarget | null): void {
     if (!r.shadowMap.enabled) { r.shadowMap.enabled = true; r.shadowMap.type = PCFSoftShadowMap; }
+    // 场景在 SceneManager.resize 之后才创建时也要拿到正确宽高比
+    const w = target ? target.width : r.domElement.width, h = target ? target.height : r.domElement.height;
+    if (h > 0 && Math.abs(this.rig.camera.aspect - w / h) > 1e-3) this.resize(w / r.getPixelRatio(), h / r.getPixelRatio());
     r.setRenderTarget(target);
     r.render(this.scene, this.rig.camera);
     r.setRenderTarget(null);
@@ -121,14 +146,14 @@ export class RegionScene implements IScene {
   alignTo(_rect: NdcRect): void {
     if (!this.region) return;
     const n = this.region.size;
-    this.rig.snap(new Vector3(n / 2, 0, n / 2), n * 1.6);
+    this.rig.snap(new Vector3(n / 2, 0, n / 2), this.rig.distFor(Zoom.Far));
     this.rig.follow = this.tokenPos;
   }
 
   setDiveProgress(t: number, dir: 'dive' | 'rise'): void {
     if (dir === 'rise' && this.region) {
       // 返回大地图：镜头往上拉
-      this.rig.dist = MathUtils.lerp(ZOOM_DIST[this.rig.zoomLevel], this.region.size * 1.6, t);
+      this.rig.dist = MathUtils.lerp(this.rig.distFor(this.rig.zoomLevel), this.rig.distFor(Zoom.Far) * 1.3, t);
     }
   }
 
@@ -216,34 +241,96 @@ export class RegionScene implements IScene {
     this.root.add(g.mesh);
     this.playerCell = r.playerCell;
     this.cellCenter(r.playerCell, this.tokenPos);
-    this.rig.setBounds(0, 0, n, n);
-    this.rig.snap(this.tokenPos.clone(), ZOOM_DIST[this.rig.zoomLevel]);
+    const phase = warpPhase(r.seed ?? 0);
+    g.setWarpPhase(phase);
+    this.vis = new Visibility(n);
+    this.vis.attach(g.mesh.material, 'ground');
+    this.vis.setCenter(r.playerCell, true);
+    this.rig.setRegionSize(n);
+    this.rig.setZoom(Zoom.Near);                    // 进入地区默认近档
+    this.rig.snap(this.tokenPos.clone());
     this.rig.follow = this.tokenPos;
-    const half = n * 0.6;
-    const sc = this.sun.shadow.camera;
-    sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.near = 0.5; sc.far = 60;
-    sc.updateProjectionMatrix();
+    this.buildDressing(r, phase);
 
     // 地点立牌：从地面立起，由近及远
     for (const loc of r.locations) {
       const card = this.makeStandee(loc);
       const c = this.cellCenter(loc.cell);
       card.position.set(c.x, 0.001, c.z - 0.2);
+      this.vis.attach(card.material, 'loc');
       const d = Math.hypot(c.x - this.tokenPos.x, c.z - this.tokenPos.z);
       card.rise(0.25 + d * 0.06);
       this.standees.push(card);
       this.root.add(card);
     }
     // 玩家令牌
-    this.token = new PaperCard(makeCardGeometry({ width: 0.42, height: 0.62, uv: [0, 0, 1, 1] }),
+    this.token = new PaperCard(makeCardGeometry({ width: 0.22, height: 0.32, uv: [0, 0, 1, 1] }),
       createPaperMaterial({ map: tokenTexture() }));
     this.token.rise(0.1);
     this.root.add(this.token);
     this.intro = 0;
   }
 
+  /** 三层布置：主体立牌（terrainBatch）+ 填充小件 / 地面散件（detailBatch）。 */
+  private buildDressing(r: RegionData, phase: ReturnType<typeof warpPhase>): void {
+    if (!this.art || !this.vis) return;
+    const n = r.size, places = dressRegion(r, phase);
+    const tb = this.terrainBatch = new PaperBatch(this.art, { cards: MAX_MAIN * n * n + 64, frames: 40 });
+    const db = this.detailBatch = new PaperBatch(this.art, { cards: DETAIL_PER_CELL * n * n, frames: 40 });
+    this.vis.attach(tb.material, 'batch');
+    this.vis.attach(db.material, 'batch');
+    db.mesh.castShadow = true;
+    const tint = new Color(), pos = new Vector3();
+    const known = new Set(this.art.json.frames.map((f) => f.name));
+    // 起立：由近及远
+    const delayOf = (p: Placement) => 0.2 + Math.hypot(p.x - this.tokenPos.x, p.z - this.tokenPos.z) * 0.05;
+    for (const p of places) {
+      if (!known.has(p.artKey)) continue;
+      pos.set(p.x, p.layer === 'flat' ? 0.002 : 0.001, p.z);
+      tint.setScalar(p.tint);
+      if (p.layer === 'main') {
+        const h = tb.add({ frame: p.artKey, position: pos, yaw: p.yaw, scale: p.scale, tint, startState: HingeState.FLAT });
+        tb.rise(h, delayOf(p));
+      } else if (p.layer === 'filler') {
+        const h = db.add({ frame: p.artKey, position: pos, yaw: p.yaw, scale: p.scale, tint, startState: HingeState.FLAT });
+        db.rise(h, delayOf(p) + 0.1);
+        this.fillerHandles.push(h);
+      } else {
+        this.flatHandles.push(db.add({ frame: p.artKey, position: pos, yaw: p.yaw, scale: p.scale, tint, startState: HingeState.FLAT }));
+      }
+    }
+    this.root.add(tb.mesh, db.mesh);
+    this.detailShown = true; this.detailHideAt = -1;
+  }
+
+  /** 远档：填充小件折平（300ms）后整批隐藏；回到近 / 中档再立起。 */
+  private updateDetailLayer(): void {
+    const db = this.detailBatch;
+    if (!db) return;
+    const want = this.rig.zoomLevel !== Zoom.Far;
+    if (want !== this.detailShown) {
+      this.detailShown = want;
+      if (want) { db.mesh.visible = true; this.detailHideAt = -1; for (const h of this.fillerHandles) db.rise(h, Math.random() * 0.1); }
+      else { for (const h of this.fillerHandles) db.fall(h); this.detailHideAt = this.intro + DETAIL_FOLD_S; }
+    }
+    if (this.detailHideAt >= 0 && this.intro >= this.detailHideAt) { db.mesh.visible = false; this.detailHideAt = -1; }
+  }
+
+  /** 阴影相机跟随可视范围（WO3 §3.11 简化版）：外扩 2 格，按纹素对齐。 */
+  private fitShadow(): void {
+    const cells = this.rig.cellsFor(this.rig.zoomLevel);
+    const half = cells * 0.5 + 2 + 1.2;            // 外扩 2 格 + maxCasterHeight
+    const sc = this.sun.shadow.camera, size = this.sun.shadow.mapSize.x;
+    if (sc.right !== half) { sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.near = 0.5; sc.far = 60; sc.updateProjectionMatrix(); }
+    const texel = (half * 2) / size, t = this.rig.target;
+    const x = Math.round(t.x / texel) * texel, z = Math.round(t.z / texel) * texel;
+    this.sun.target.position.set(x, 0, z);
+    this.sun.position.set(x - 6, 12, z + 4);
+  }
+
   private makeStandee(loc: RegionLocation): PaperCard {
-    const geo = makeCardGeometry({ width: STANDEE_W, height: STANDEE_W * STANDEE_ASPECT, uv: [0, 0, 1, 1] });
+    const H = (LOCATION_SIZE[locationKind(loc.type)] ?? LOCATION_SIZE.village)[1];
+    const geo = makeCardGeometry({ width: H / STANDEE_ASPECT, height: H, uv: [0, 0, 1, 1] });
     const urls = terrainUrls(loc.type);
     const mat = createPaperMaterial({ color: urls.length ? 0xffffff : kindColor(locationKind(loc.type)), cutout: true });
     const card = new PaperCard(geo, mat);
@@ -277,6 +364,7 @@ export class RegionScene implements IScene {
     this.tokenPos.y = 0;
     this.ground?.setFlag(this.playerCell, Hl.Path, false);
     this.token?.nudge(-2.5);
+    this.vis?.setCenter(this.playerCell);
     this.onMoved?.(this.playerCell);
     if (w.queued !== null) {
       const q = w.queued; this.walk = null;
@@ -305,6 +393,10 @@ export class RegionScene implements IScene {
     this.standees = [];
     if (this.token) { this.token.geometry.dispose(); this.token.material.map?.dispose(); this.token.material.dispose(); this.token = null; }
     this.ground?.dispose(); this.ground = null;
+    this.terrainBatch?.dispose(); this.terrainBatch = null;
+    this.detailBatch?.dispose(); this.detailBatch = null;
+    this.fillerHandles = []; this.flatHandles = [];
+    this.vis?.dispose(); this.vis = null;
     this.root.clear();
     this.walk = null; this.hover = -1; this.selected = -1;
   }
@@ -312,7 +404,7 @@ export class RegionScene implements IScene {
 
 function fitCard(card: PaperCard, t: Texture): void {
   const im = t.image as { width?: number; height?: number } | null;
-  if (im?.width && im.height) card.scale.y = im.height / im.width / STANDEE_ASPECT;
+  if (im?.width && im.height) card.scale.x = STANDEE_ASPECT / (im.height / im.width);   // 原图高度不一：保高调宽
 }
 
 function hashStr(s: string): number { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; }
