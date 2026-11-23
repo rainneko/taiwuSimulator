@@ -23,7 +23,8 @@ export function getBreathStanceSpeed(f: FighterState): number {
   return Math.floor(RESOURCE_RECOVERY_BASE * f.breathStanceSpeed * focusBonus * penalty);
 }
 
-export function canCastTechnique(f: FighterState): boolean {
+/** 提气、架势双满 */
+export function isDualFull(f: FighterState): boolean {
   return f.breath >= RESOURCE_MAX && f.stance >= RESOURCE_MAX;
 }
 
@@ -69,16 +70,4 @@ export function tickFocus(state: CombatState, f: FighterState): void {
   if (state.frame % FOCUS_TICK_INTERVAL !== 0) return;
   if (f.attackPhase === 'outOfRange') return;
   addFocus(f, 1, state.battleType);
-}
-
-/** 护体期间守御每帧回复 guardMax/300 */
-export function tickGuardSkill(f: FighterState): void {
-  if (f.guardSkillPhase !== 'active') return;
-  addGuard(f, Math.max(1, Math.floor(f.guardMax / 300)));
-  f.guardSkillRemain--;
-  if (f.guardSkillRemain <= 0) {
-    f.guardSkillPhase = 'off';
-    f.guardSkillId = null;
-    f.guardSkillRemain = 0;
-  }
 }

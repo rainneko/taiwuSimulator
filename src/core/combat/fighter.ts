@@ -9,7 +9,9 @@ export const DEFAULT_STATS: FighterStats = {
   protection: 100, qiControl: 100, guardEfficiency: 100,
   armorToughness: 0, armorPenetration: 0,
   innerDamageRatio: 50, dealInner: 100, dealOuter: 100,
-  luck: 0, courage: 0, chaseCoef: 100, changeMoveCoef: 100,
+  luck: 0, courage: 0, chaseCoef: 30, changeMoveCoef: 30,
+  penetrateOuter: 100, penetrateInner: 100, neigongPlay: 0, innerBreath: 100,
+  castSpeed: 100, weaponSwitch: 100,
 };
 
 export const DEFAULT_FLEE_FRAMES = 180;
@@ -64,6 +66,15 @@ export function createFighterState(fc: FighterConfig, startDistance: number): Fi
     weapons: fc.weapons.slice(0, 3).map(w => ({ ...w, wheel: w.wheel.slice() })),
     stats: { ...DEFAULT_STATS, ...fc.stats },
     isFirst: false,
+    changeMeter: 0, changeMovePref: null, guardBroken: false,
+    specialWounds: { spirit: { inner: 0, outer: 0 }, poison: { inner: 0, outer: 0 }, whole: { inner: 0, outer: 0 } },
+    woundLog: [],
+    castKind: null, statMods: [],
+    passiveEffects: (fc.effects ?? []).slice(),
+    arts: (fc.arts ?? []).slice(),
+    memory: { artResults: {}, damageByDistance: {} },
+    poison: {},
+    bodyMovementDecayInterval: 0,
   };
   equipWeapon(f, w0);
   return f;

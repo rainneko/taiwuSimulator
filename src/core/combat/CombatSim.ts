@@ -2,17 +2,20 @@ import { PCG32 } from '../rng';
 import { EventBus } from '../EventBus';
 import type { CombatAction, CombatConfig, CombatEvent, CombatEventMap, CombatState, FighterState } from './types';
 import { createFighterState, equipWeapon } from './fighter';
-import { RESOURCE_MAX, canCastTechnique, initGuard, tickBreathStance, tickFocus, tickGuardSkill } from './resource';
+import { RESOURCE_MAX, initGuard, tickBreathStance, tickFocus } from './resource';
 import { setTargetDistance, tickMobility, tickMovement } from './distance';
-import { tickAttack, ATTACK_ANIM_LOCK } from './attack';
-import { resolveAttackRound } from './hit';
+import { tickAttack } from './attack';
 import { checkEnd } from './wound';
 import { findFighter } from './util';
+import { shuffleWheel } from './stance';
+import { WEAPON_SWITCH_TOTAL, tickWeaponSwitch } from './weapon';
+import { startCast, tickCast } from './technique';
+import { tickGuardSkill } from './guardSkill';
+import { tickStatMods } from './stats';
+import { triggerEffects } from './effect';
+import { createAIRuntime, applyDifficultyStats, tickAI } from './ai';
 
-export const DEFAULT_CAST_FRAMES = 60;
-export const DEFAULT_GUARD_SKILL_FRAMES = 300;
-export const WEAPON_SWITCH_COOLDOWN = 60;
-export const TECHNIQUE_POWER_MULT = 2;
+export const WEAPON_SWITCH_COOLDOWN = WEAPON_SWITCH_TOTAL;
 
 export function initCombat(config: CombatConfig): CombatState {
   const rng = new PCG32(config.seed);
@@ -30,11 +33,14 @@ export function initCombat(config: CombatConfig): CombatState {
     f.movementPoints = f.isFirst ? 3 : 1;
     f.breath = Math.floor(RESOURCE_MAX * pct);
     f.stance = Math.floor(RESOURCE_MAX * pct);
+    const aiCfg = config.ai?.[i];
+    if (aiCfg) applyDifficultyStats(f, aiCfg.difficulty);
     initGuard(f);
+    shuffleWheel(rng, f);
     return f;
   }) as [FighterState, FighterState];
 
-  return {
+  const state: CombatState = {
     phase: 'running',
     battleType: config.battleType ?? 'spar',
     frame: 0, stepCount: 0, animLock: 0, choiceWindow: 0,
@@ -43,15 +49,26 @@ export function initCombat(config: CombatConfig): CombatState {
     seed: config.seed,
     rng, events,
     commandLog: [],
+    arts: {
+      techniques: { ...config.arts?.techniques },
+      guardSkills: { ...config.arts?.guardSkills },
+      movementArts: { ...config.arts?.movementArts },
+    },
+    ai: [config.ai?.[0] ? createAIRuntime(config.ai[0]) : null, config.ai?.[1] ? createAIRuntime(config.ai[1]) : null],
+    calcs: [],
+    counterTriggered: false,
   };
+  triggerEffects(state, 0, 'onCombatStart', {});
+  triggerEffects(state, 1, 'onCombatStart', {});
+  return state;
 }
 
 function drain(state: CombatState): CombatEvent[] {
   return state.events.drain() as CombatEvent[];
 }
 
-export function applyCommand(state: CombatState, cmd: CombatAction): void {
-  state.commandLog.push({ step: state.stepCount, action: cmd });
+export function applyCommand(state: CombatState, cmd: CombatAction, log = true): void {
+  if (log) state.commandLog.push({ step: state.stepCount, action: cmd });
   if (cmd.type === 'pause') { if (state.phase === 'running') state.phase = 'paused'; return; }
   if (cmd.type === 'resume') { if (state.phase === 'paused') state.phase = 'running'; return; }
   if (state.phase === 'ended') return;
@@ -62,27 +79,14 @@ export function applyCommand(state: CombatState, cmd: CombatAction): void {
       setTargetDistance(f, cmd.delta);
       break;
     case 'castTechnique':
-      if (f.castPhase === 'none' && canCastTechnique(f)) {
-        f.castPhase = 'casting';
-        f.castSkillId = cmd.skillId;
-        f.castProgress = 0;
-        f.castTotal = Math.max(1, cmd.castFrames ?? DEFAULT_CAST_FRAMES);
-        f.breath = 0;
-        f.stance = 0;
-        state.events.emit('techniqueCastStart', { actorId: f.id, skillId: cmd.skillId, totalFrames: f.castTotal });
-      }
-      break;
     case 'activateGuardSkill':
-      if (f.guardSkillPhase === 'off') {
-        f.guardSkillPhase = 'active';
-        f.guardSkillId = cmd.skillId;
-        f.guardSkillRemain = Math.max(1, cmd.durationFrames ?? DEFAULT_GUARD_SKILL_FRAMES);
-      }
+      startCast(state, f, cmd.skillId);
       break;
     case 'switchWeapon': {
       const w = f.weapons.find(x => x.id === cmd.weaponId);
       if (w && f.weaponSwitchCooldown === 0 && w.id !== f.weaponId && f.castPhase === 'none') {
         equipWeapon(f, w);
+        shuffleWheel(state.rng, f);
         f.weaponSwitchCooldown = WEAPON_SWITCH_COOLDOWN;
         state.events.emit('weaponSwitch', { actorId: f.id, weaponId: w.id });
       }
@@ -92,12 +96,8 @@ export function applyCommand(state: CombatState, cmd: CombatAction): void {
       if (f.fleePhase === 'none') { f.fleePhase = 'fleeing'; f.fleeProgress = 0; }
       break;
     case 'changeMove':
-      // WO2：变招窗口内的部位选择
-      if (state.phase === 'choice') {
-        state.events.emit('changeMove', { actorId: f.id, part: cmd.part, success: true });
-        state.phase = 'running';
-        state.choiceWindow = 0;
-      }
+      // 变招部位偏好：之后触发变招时使用该部位（M1 不暂停等待选择）
+      f.changeMovePref = cmd.part;
       break;
   }
 }
@@ -118,23 +118,6 @@ function tickFlee(state: CombatState, f: FighterState): void {
   }
 }
 
-function tickWeaponSwitch(f: FighterState): void {
-  if (f.weaponSwitchCooldown > 0) f.weaponSwitchCooldown--;
-}
-
-function tickCast(state: CombatState, f: FighterState): void {
-  f.castProgress++;
-  if (f.castProgress < f.castTotal) return;
-  const skillId = f.castSkillId ?? '';
-  f.castPhase = 'none';
-  f.castSkillId = null;
-  f.castProgress = 0;
-  f.castTotal = 0;
-  state.events.emit('techniqueStage', { actorId: f.id, skillId, stage: 4, hits: 1 });
-  state.animLock = ATTACK_ANIM_LOCK;
-  resolveAttackRound(state, f, TECHNIQUE_POWER_MULT);
-}
-
 /** 推进一个逻辑帧。只修改传入的 state；所有随机走 state.rng。 */
 export function step(state: CombatState, commands: readonly CombatAction[] = []): CombatEvent[] {
   for (const c of commands) applyCommand(state, c);
@@ -145,6 +128,7 @@ export function step(state: CombatState, commands: readonly CombatAction[] = [])
   if (state.animLock > 0) { state.animLock--; return drain(state); }
 
   state.frame++;
+  tickAI(state);
 
   const order = state.fighters[0].isFirst
     ? [state.fighters[0], state.fighters[1]]
@@ -155,6 +139,8 @@ export function step(state: CombatState, commands: readonly CombatAction[] = [])
     tickFlee(state, f);
     if ((state.phase as string) === 'ended') break;
     tickWeaponSwitch(f);
+    checkEnd(state);
+    if ((state.phase as string) === 'ended') break;
 
     if (f.castPhase === 'casting') {
       tickCast(state, f);
@@ -166,6 +152,8 @@ export function step(state: CombatState, commands: readonly CombatAction[] = [])
     tickGuardSkill(f);
     tickMobility(f);
     tickFocus(state, f);
+    tickStatMods(f);
+    triggerEffects(state, f === state.fighters[0] ? 0 : 1, 'everyNFrames', {});
 
     if (state.animLock > 0) break;
   }
@@ -181,7 +169,7 @@ export function serializeState(state: CombatState): string {
   return JSON.stringify({
     phase: state.phase, battleType: state.battleType, frame: state.frame,
     stepCount: state.stepCount, animLock: state.animLock, choiceWindow: state.choiceWindow,
-    fighters: state.fighters, distance: state.distance,
+    fighters: state.fighters, distance: state.distance, ai: state.ai,
     seed: state.seed.toString(), rng: state.rng.save(),
   });
 }

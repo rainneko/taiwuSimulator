@@ -1,57 +1,82 @@
-import { HIT_CHANNELS, HIT_DODGE_MAP, type CombatState, type FighterState, type HitChannel } from './types';
-import { applyHitDamage, severityOf } from './damage';
-import { gainStance, nextWheelStance } from './stance';
-import { addFocus } from './resource';
-import { getOpponent } from './util';
+import type { PCG32 } from '../rng';
+import type { AnyPart, BodyPart, FighterState, HitChannel, StanceType } from './types';
+import { AVOID_STAT, HIT_STAT, statOf } from './stats';
+import { getCombatWeapon } from './weapon';
+import { clamp } from './util';
+
+/**
+ * 式 → 命中通道（§5.8）。力道=掷劈崩；迅疾=弹刺点缠机毒；精妙=御撩拿扫咒药。
+ * 「音」走内息，原版无专门化解通道，按卸力（力道通道）处理。
+ */
+export const STANCE_CHANNEL: Record<StanceType, HitChannel> = {
+  throw: 'power', chop: 'power', crash: 'power',
+  flick: 'speed', stab: 'speed', dot: 'speed', wrap: 'speed', trick: 'speed', venom: 'speed',
+  ward: 'skill', lift: 'skill', grab: 'skill', sweep: 'skill', curse: 'skill', medicine: 'skill',
+  sound: 'power',
+  none: 'power', wild: 'power', kill: 'power',
+};
+
+/** 音/咒/药/毒 不可变招 */
+export const STANCE_CAN_CHANGE: Record<StanceType, boolean> = {
+  throw: true, chop: true, crash: true, flick: true, stab: true, dot: true, wrap: true, trick: true,
+  ward: true, lift: true, grab: true, sweep: true,
+  sound: false, curse: false, medicine: false, venom: false,
+  none: true, wild: true, kill: true,
+};
+
+type PartWeights = Partial<Record<AnyPart, number>>;
+
+/** 式 → 部位权重表 */
+export const STANCE_PART_WEIGHTS: Record<StanceType, PartWeights> = {
+  throw: { chest: 65, waist: 25, head: 1, leftArm: 5, rightArm: 5, leftLeg: 5, rightLeg: 5 },
+  chop: { chest: 70, waist: 15, head: 1, leftArm: 10, rightArm: 10, leftLeg: 5, rightLeg: 5 },
+  crash: { chest: 55, waist: 35, head: 1, leftArm: 5, rightArm: 5, leftLeg: 5, rightLeg: 5 },
+  flick: { chest: 45, waist: 35, head: 1, leftArm: 10, rightArm: 10, leftLeg: 10, rightLeg: 10 },
+  stab: { chest: 40, waist: 30, head: 1, leftArm: 20, rightArm: 20, leftLeg: 10, rightLeg: 10 },
+  dot: { chest: 40, waist: 30, head: 1, leftArm: 15, rightArm: 15, leftLeg: 15, rightLeg: 15 },
+  wrap: { chest: 25, waist: 15, head: 1, leftArm: 30, rightArm: 30, leftLeg: 30, rightLeg: 30 },
+  trick: { chest: 50, waist: 30, head: 1, leftArm: 10, rightArm: 10, leftLeg: 10, rightLeg: 10 },
+  ward: { chest: 30, waist: 20, head: 1, leftArm: 30, rightArm: 30, leftLeg: 20, rightLeg: 20 },
+  lift: { chest: 25, waist: 25, head: 1, leftArm: 25, rightArm: 25, leftLeg: 25, rightLeg: 25 },
+  grab: { chest: 25, waist: 20, head: 1, leftArm: 35, rightArm: 35, leftLeg: 20, rightLeg: 20 },
+  sweep: { chest: 25, waist: 15, head: 1, leftArm: 30, rightArm: 30, leftLeg: 30, rightLeg: 30 },
+  sound: { spirit: 100 }, curse: { spirit: 100 },
+  medicine: { poison: 100 }, venom: { poison: 100 },
+  none: { chest: 100 }, wild: { chest: 100 }, kill: { chest: 100 },
+};
+
+export interface HitResult { hit: boolean; severity: 1 | 2; chance: number; roll: number }
+
+/** 命中概率（千分比）= clamp(500 × (命中+攻方福缘)/(化解+守方福缘), 50, 1000) */
+export function hitChancePermille(atkHit: number, defAvoid: number, atkFortune: number, defFortune: number): number {
+  const atkTotal = atkHit + atkFortune;
+  const defTotal = defAvoid + defFortune;
+  return clamp(Math.floor(500 * atkTotal / Math.max(1, defTotal)), 50, 1000);
+}
+
+/** 命中判定：命中 ≥ 化解×2 → 重伤(2)，否则轻伤(1) */
+export function hitCheck(
+  rng: PCG32, atkHit: number, defAvoid: number, atkFortune: number, defFortune: number,
+): HitResult {
+  const chance = hitChancePermille(atkHit, defAvoid, atkFortune, defFortune);
+  const roll = rng.randInt(1000);
+  return { hit: roll < chance, severity: atkHit >= defAvoid * 2 ? 2 : 1, chance, roll };
+}
 
 export function getHitValue(f: FighterState, ch: HitChannel): number {
-  return ch === 'power' ? f.stats.hitPower : ch === 'speed' ? f.stats.hitSpeed : f.stats.hitSkill;
+  return statOf(f, HIT_STAT[ch]) + getCombatWeapon(f).hit[ch];
 }
 
 export function getDodgeValue(f: FighterState, ch: HitChannel): number {
-  const d = HIT_DODGE_MAP[ch];
-  return d === 'deflect' ? f.stats.dodgeDeflect : d === 'evade' ? f.stats.dodgeEvade : f.stats.dodgeParry;
+  return statOf(f, AVOID_STAT[ch]);
 }
 
-/**
- * 命中率% = 命中 / (命中 + 化解) × 100，再受破绽层数加成（每层 +5%），夹在 [5, 95]。
- * M1 占位公式，WO2 按 wiki 原版公式替换。
- */
-export function hitChance(attacker: FighterState, defender: FighterState, ch: HitChannel, weaknessStacks = 0): number {
-  const h = Math.max(0, getHitValue(attacker, ch));
-  const d = Math.max(0, getDodgeValue(defender, ch));
-  const base = h + d === 0 ? 50 : (h / (h + d)) * 100;
-  return Math.max(5, Math.min(95, base + weaknessStacks * 5));
+export function pickBodyPart(rng: PCG32, weights: PartWeights): AnyPart {
+  const entries = Object.entries(weights) as [AnyPart, number][];
+  const idx = rng.weightedPick(entries.map(e => e[1]));
+  return entries[idx]?.[0] ?? 'chest';
 }
 
-/** 按攻击方三路命中值加权选择本次的命中路数 */
-export function pickChannel(state: CombatState, f: FighterState): HitChannel {
-  const idx = state.rng.weightedPick(HIT_CHANNELS.map(c => Math.max(1, Math.floor(getHitValue(f, c)))));
-  return HIT_CHANNELS[idx] ?? 'power';
-}
-
-export const FOCUS_ON_HIT = 5;
-export const FOCUS_ON_DODGE = 5;
-
-/** 一次出手：选路 → 命中判定 → 伤害/化解 → 获得式 & 专注 */
-export function resolveAttackRound(state: CombatState, attacker: FighterState, powerMult: number): boolean {
-  const defender = getOpponent(state, attacker);
-  state.events.emit('attackStart', { actorId: attacker.id, targetId: defender.id, frame: state.frame });
-
-  const ch = pickChannel(state, attacker);
-  const pct = hitChance(attacker, defender, ch);
-  if (!state.rng.chance(pct)) {
-    state.events.emit('dodge', { actorId: attacker.id, targetId: defender.id, channel: ch });
-    addFocus(defender, FOCUS_ON_DODGE, state.battleType);
-    return false;
-  }
-
-  const r = applyHitDamage(state, attacker, defender, ch, powerMult);
-  state.events.emit('hit', {
-    actorId: attacker.id, targetId: defender.id, part: r.part,
-    severity: severityOf(r.inner + r.outer), damage: r.damage, channel: ch,
-  });
-  gainStance(state, attacker, nextWheelStance(attacker));
-  addFocus(attacker, FOCUS_ON_HIT, state.battleType);
-  return true;
+export function isBodyPart(p: AnyPart): p is BodyPart {
+  return p !== 'spirit' && p !== 'poison' && p !== 'whole';
 }

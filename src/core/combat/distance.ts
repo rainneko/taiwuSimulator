@@ -1,5 +1,6 @@
 import type { CombatState, FighterState } from './types';
 import { clamp, round1 } from './util';
+import { modSum } from './stats';
 
 export const DISTANCE_MIN = 2.0;
 export const DISTANCE_MAX = 9.0;
@@ -28,8 +29,9 @@ export function tickMovement(state: CombatState, f: FighterState): void {
 
   const eff = getMoveEfficiency(f);
   const guardPenalty = f.guardSkillPhase === 'active' ? 0.5 : 1.0;
-  const distPenalty = 1 - f.wounds.leftLeg.weakness * 0.05;
-  const speedPenalty = 1 - f.wounds.rightLeg.acupoints * 0.05;
+  // 点穴：左腿 → 移动距离 -5%/层，右腿 → 移动速度 -5%/层；身法加成走 StatMod（千分比）
+  const distPenalty = (1 - f.wounds.leftLeg.acupoints * 0.05) * (1000 + modSum(f, 'moveStepPermille')) / 1000;
+  const speedPenalty = (1 - f.wounds.rightLeg.acupoints * 0.05) * (1000 + modSum(f, 'moveSpeedPermille')) / 1000;
 
   const speed = f.moveSpeed * eff.speed * guardPenalty * speedPenalty;
   f.moveProgress += Math.floor(speed * 100);
@@ -59,8 +61,9 @@ export function addBodyMovementPoints(f: FighterState, n: number): void {
 export function tickMobility(f: FighterState): void {
   if (f.bodyMovementPoints > 0) {
     f.bodyMovementDecay++;
-    if (f.bodyMovementDecay >= BODY_MOVE_DECAY_INTERVAL) {
-      f.bodyMovementDecay -= BODY_MOVE_DECAY_INTERVAL;
+    const interval = f.bodyMovementDecayInterval || BODY_MOVE_DECAY_INTERVAL;
+    if (f.bodyMovementDecay >= interval) {
+      f.bodyMovementDecay -= interval;
       f.bodyMovementPoints = Math.max(0, f.bodyMovementPoints - 1);
     }
   } else {

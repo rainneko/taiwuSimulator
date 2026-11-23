@@ -4,11 +4,19 @@ import { gainStance, nextWheelStance, matchStances, consumeStances, weaponSuppor
 import { config } from './fixtures';
 
 describe('式系统', () => {
-  it('轮盘按顺序循环提供式', () => {
+  it('轮盘开战时打乱（排列不变），之后按顺序循环', () => {
     const s = initCombat(config());
     const f = s.fighters[0];
+    expect([...f.wheelSlots].sort()).toEqual(['chop', 'chop', 'flick', 'stab', 'stab', 'wild']);
+    const first = [...f.wheelSlots];
     const seq = Array.from({ length: 7 }, () => nextWheelStance(f));
-    expect(seq).toEqual(['chop', 'stab', 'flick', 'chop', 'stab', 'wild', 'chop']);
+    expect(seq).toEqual([...first, first[0]]);
+  });
+  it('只能获得本武器轮盘包含的式（万能/杀式除外）', () => {
+    const s = initCombat(config());
+    const f = s.fighters[0];
+    expect(gainStance(s, f, 'sweep')).toBe(false);
+    expect(gainStance(s, f, 'kill')).toBe(true);
   });
   it('9 式槽满后挤掉最早的', () => {
     const s = initCombat(config());

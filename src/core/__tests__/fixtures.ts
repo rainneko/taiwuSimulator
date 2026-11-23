@@ -17,3 +17,9 @@ export function fighter(id: string, extra: Partial<FighterConfig> = {}): Fighter
 export function config(seed = 42n, extra: Partial<CombatConfig> = {}): CombatConfig {
   return { seed, fighters: [fighter('a'), fighter('b')], ...extra };
 }
+
+/** AI 对战基准用配置：武器基伤 150、护体/御气/破体/破气 300，平均时长落在 40-120 秒 */
+export function benchFighter(id: string, arts: string[] = []): FighterConfig {
+  const stats = { protection: 300, qiControl: 300, penetrateOuter: 300, penetrateInner: 300 };
+  return { id, name: id, weapons: [{ ...SWORD, power: 150 }, { ...SPEAR, power: 210 }], stats, arts };
+}

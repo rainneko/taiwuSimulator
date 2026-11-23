@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initCombat } from '../combat/CombatSim';
-import { RESOURCE_MAX, tickBreathStance, canCastTechnique, initGuard, addFocus, getBreathStanceSpeed, absorbWithGuard, FOCUS_MAX } from '../combat/resource';
+import { RESOURCE_MAX, tickBreathStance, isDualFull, initGuard, addFocus, getBreathStanceSpeed, absorbWithGuard, FOCUS_MAX } from '../combat/resource';
 import { config, fighter } from './fixtures';
 
 describe('提气/架势', () => {
@@ -18,9 +18,9 @@ describe('提气/架势', () => {
     const s = initCombat(config());
     const f = s.fighters[0];
     f.breath = RESOURCE_MAX; f.stance = RESOURCE_MAX - 1;
-    expect(canCastTechnique(f)).toBe(false);
+    expect(isDualFull(f)).toBe(false);
     f.stance = RESOURCE_MAX;
-    expect(canCastTechnique(f)).toBe(true);
+    expect(isDualFull(f)).toBe(true);
   });
   it('专注加成最多 +100%，点穴降低回复', () => {
     const s = initCombat(config());

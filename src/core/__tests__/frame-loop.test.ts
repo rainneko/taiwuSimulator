@@ -4,6 +4,7 @@ import { runHeadless } from '../combat/headless';
 import { RESOURCE_MAX } from '../combat/resource';
 import type { CombatAction } from '../combat/types';
 import { config } from './fixtures';
+import { TEST_SWORD_TECHNIQUE } from './testArts';
 
 function scripted(n: number): CombatAction | null {
   if (n === 30) return { type: 'setTargetDistance', actorId: 'a', delta: -0.5 };
@@ -39,7 +40,7 @@ describe('帧循环', () => {
   it('无头模式：站在 5.0 自动普攻直到分出胜负', () => {
     const s = runHeadless(config(3n));
     expect(s.phase).toBe('ended');
-    const loser = s.fighters.find(f => f.totalInner >= 50 || f.totalOuter >= 50);
+    const loser = s.fighters.find(f => f.totalInner >= 500 || f.totalOuter >= 500);
     expect(loser).toBeDefined();
   });
   it('暂停时不推进帧，恢复后继续', () => {
@@ -54,13 +55,16 @@ describe('帧循环', () => {
     const s = initCombat(config(9n));
     const f = s.fighters[0];
     f.breath = RESOURCE_MAX; f.stance = RESOURCE_MAX;
-    const ev = step(s, [{ type: 'castTechnique', actorId: f.id, skillId: 'test', castFrames: 10 }]);
+    s.arts.techniques[TEST_SWORD_TECHNIQUE.id] = TEST_SWORD_TECHNIQUE;
+    f.stances = ['chop', 'chop', 'stab'];
+    s.fighters[1].weaponRangeMin = s.fighters[1].weaponRangeMax = 1; // 让对手够不着，避免施展完成前分出胜负
+    const ev = step(s, [{ type: 'castTechnique', actorId: f.id, skillId: TEST_SWORD_TECHNIQUE.id }]);
     expect(ev.map(e => e.type)).toContain('techniqueCastStart');
     expect(f.castPhase).toBe('casting');
     const all: string[] = [];
-    for (let i = 0; i < 200 && f.castPhase === 'casting'; i++) all.push(...step(s).map(e => e.type));
+    for (let i = 0; i < 1000 && f.castPhase === 'casting'; i++) all.push(...step(s).map(e => e.type));
     expect(f.castPhase).toBe('none');
-    expect(all).toContain('techniqueStage');
+    expect(all).toContain('techniqueResolved');
   });
   it('逃跑达到阈值结束战斗', () => {
     const s = initCombat(config(5n, { startDistance: 9 }));
