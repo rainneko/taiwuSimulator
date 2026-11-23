@@ -1,0 +1,11 @@
+:root {
+  --root-font: clamp(12px, 0.833vw, 18px);
+  --paper-0: #fbf7ee; --paper-1: #f1e7d2; --paper-2: #dccbaa;
+  --ink-0: #231a12; --ink-1: #4a3b2b; --ink-2: #7d6a52;
+  --accent-0: #8a2b1f; --accent-1: #b5482f; --accent-2: #e5b78a;
+  --shadow-1: 1px 2px 0 rgba(60, 40, 20, .18), 0 2px 6px rgba(60, 40, 20, .12);
+  --shadow-2: 2px 4px 0 rgba(60, 40, 20, .2), 0 8px 20px rgba(60, 40, 20, .2);
+  --radius: 3px;
+  --sp-1: .25rem; --sp-2: .5rem; --sp-3: .75rem; --sp-4: 1rem; --sp-5: 1.5rem; --sp-6: 2.5rem;
+  --fibre: none;
+}
