@@ -8,6 +8,7 @@ export default defineConfig({
         paper: fileURLToPath(new URL('./dev/paper.html', import.meta.url)),
         combat: fileURLToPath(new URL('./dev/combat.html', import.meta.url)),
         region: fileURLToPath(new URL('./dev/region.html', import.meta.url)),
+        map: fileURLToPath(new URL('./dev/map.html', import.meta.url)),
       },
     },
   },
