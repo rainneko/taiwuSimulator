@@ -27,6 +27,12 @@ art/*/raw/
 art/*/work/
 art/*/review/
 
+# Build output
+dist/
+
+# GPT generated images (local only)
+generated_images/
+
 # Node
 node_modules/
 

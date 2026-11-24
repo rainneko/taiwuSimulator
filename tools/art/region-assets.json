@@ -153,7 +153,8 @@
      1,
      3
     ]
-   }
+   },
+   "pilot": true
   },
   {
    "artKey": "terrain.ground.jungle",
@@ -239,8 +240,8 @@
    "layerSize": 768,
    "layerSizeHigh": 1024,
    "density": [
-    2,
-    3
+    1,
+    2
    ],
    "fillers": {
     "fillers": [
@@ -261,8 +262,7 @@
      1,
      2
     ]
-   },
-   "pilot": true
+   }
   },
   {
    "artKey": "terrain.ground.cave",
@@ -342,7 +342,7 @@
    "layerSize": 768,
    "layerSizeHigh": 1024,
    "density": [
-    1,
+    2,
     3
    ],
    "fillers": {
@@ -890,7 +890,7 @@
    ],
    "pxPerUnit": 768,
    "terrain": "mountain",
-   "height": 0.65,
+   "height": 0.5,
    "aspect": 1.2,
    "anchor": [
     0.5,
@@ -911,7 +911,7 @@
    ],
    "pxPerUnit": 768,
    "terrain": "mountain",
-   "height": 0.65,
+   "height": 0.5,
    "aspect": 0.7,
    "anchor": [
     0.5,
@@ -1806,8 +1806,7 @@
     0.5,
     0.0
    ],
-   "seasonal": true,
-   "pilot": true
+   "seasonal": true
   },
   {
    "artKey": "filler.bush.1",
@@ -2147,8 +2146,7 @@
    "anchor": [
     0.5,
     0.5
-   ],
-   "pilot": true
+   ]
   },
   {
    "artKey": "ground.piece.moss",
@@ -2292,6 +2290,196 @@
    "anchor": [
     0.5,
     0.5
+   ]
+  },
+  {
+   "artKey": "house.cottage.0",
+   "section": "J",
+   "label": "房屋：茅屋 A",
+   "kind": "standee",
+   "houseKind": "cottage",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.28,
+   "aspect": 1.15,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.cottage.1",
+   "section": "J",
+   "label": "房屋：茅屋 B",
+   "kind": "standee",
+   "houseKind": "cottage",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.28,
+   "aspect": 1.1,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.cottage.2",
+   "section": "J",
+   "label": "房屋：木屋",
+   "kind": "standee",
+   "houseKind": "cottage",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.27,
+   "aspect": 1.05,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.tile.0",
+   "section": "J",
+   "label": "房屋：瓦房 A",
+   "kind": "standee",
+   "houseKind": "tile",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.33,
+   "aspect": 1.2,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.tile.1",
+   "section": "J",
+   "label": "房屋：瓦房 B",
+   "kind": "standee",
+   "houseKind": "tile",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.34,
+   "aspect": 1.15,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.long.0",
+   "section": "J",
+   "label": "房屋：长屋 A",
+   "kind": "standee",
+   "houseKind": "long",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.3,
+   "aspect": 1.7,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.long.1",
+   "section": "J",
+   "label": "房屋：长屋 B",
+   "kind": "standee",
+   "houseKind": "long",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.31,
+   "aspect": 1.75,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.shop.0",
+   "section": "J",
+   "label": "房屋：二层木楼",
+   "kind": "standee",
+   "houseKind": "shop",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.45,
+   "aspect": 0.85,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.tower.0",
+   "section": "J",
+   "label": "房屋：瞭望木楼",
+   "kind": "standee",
+   "houseKind": "tower",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.5,
+   "aspect": 0.6,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.hall.0",
+   "section": "J",
+   "label": "房屋：殿阁",
+   "kind": "standee",
+   "houseKind": "hall",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.55,
+   "aspect": 1.3,
+   "anchor": [
+    0.5,
+    0.0
    ]
   }
  ]

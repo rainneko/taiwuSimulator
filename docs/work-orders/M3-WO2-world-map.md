@@ -1,6 +1,7 @@
 # M3-WO2：大地图纸板渲染（省域纸雕图 + 格子地面基线）
 
-> 工单版本 v1.1 · 2026-11-23 · 执行会话撰写
+> 工单版本 v1.2 · 2026-11-24 · 执行会话撰写
+> v1.2 修订：并入 M3-WO3 v1.3.1 §4 的接口改动（地形纸层）——`GridGround.setLevels` 与 `tLevel`（§10.1）、`GridPicker.setHeightAt` 按层高修正拾取（§10.3）、棋子落点高度（§10.4）、`RegionScene.layers` 挂点与进入顺序、阴影投影体高度（§10.5）、一条拾取测试（§12）。纸层关着时（`low` 档或 `layers: false`）全部退回 v1.1 的平面行为。
 > v1.1 修订：并入 M3-WO3 §4 的接口改动——`FollowRig` 三档（§9.2）、`GridGround` 的底纸数组接口（§10.1）、`RegionScene` 挂点与阴影（§10.5）、新增一条测试（§12）。地区格数按 15 / 10 写，数据驱动；总监同日确认 `RegionDef.size` 正式改为 15 / 10，每格移动消耗不变。
 > 前置：M3-WO1（纸片工具箱、`SceneManager`、`InputRouter`、`LabelProjector`、`store`）。逻辑侧只需要 PLAN §3.6 的类型（`ProvinceDef`、`RegionDef`、`TerrainDef`、`RegionState`、`WorldState`）和一份夹具数据，不需要世界模拟完成。
 > 预估：8–10 天（省域图 5 天，格子基线 3–4 天，联调 1 天）
@@ -499,6 +500,7 @@ diffuseColor.rgb *= col;
 
 - 缝宽随距离做屏幕空间修正（用 `fwidth(vGridUv)` 保证最远档缩放时缝不闪烁、不消失）。
 - 平面 `receiveShadow`，不 `castShadow`。地面本身不抬升——「选中格抬起」用一张单独的小方纸 Mesh 盖在该格上方 0.03 处来表现（只有 1–2 张，带影子，效果比在着色器里假装要好）。
+- **地形纸层（v1.2，M3-WO3 §3.13）**：新增 `setLevels(levels: Float32Array | null)`，把逐格层号写进一张与 `tTerrain` 同尺寸的 `tLevel`（N×N，R8，最近邻；编码 `r = (level + 2) × 2`），并置 `LAYERS` define——撕边与接触阴影只在两格层号相同的交界上画；`null` = 全 0 层（v1.1 行为）。纸层开着时顶面由 M3-WO3 的 `TerrainLayers` 几何承载，它直接复用本材质实例（同一组 uniform，高亮、视野灰化、季节自动跟着走）；这块平面保留但 `visible = false`，切换画质档只切可见性、不重建。上一条「选中格抬起」的小方纸相应放在该格层高 + 0.03 处。
 - 15×15 = 225 格、13×13 = 169 格都是这一个平面，成本与格数无关。N 一律从数据读（`RegionDef.size`），代码里不出现写死的格数。
 
 ### 10.2 CellHighlighter（`grid/CellHighlighter.ts`）
@@ -529,11 +531,14 @@ export class GridPicker {
   registerTall(index: number, box: Box3): void;
   unregisterTall(index: number): void;
   cellCenter(index: number, out: Vector3): Vector3;
+  /** v1.2：世界 xz → 该点地面高度（层号 × levelStep，地图外 = 0）；null = 平面。由 M3-WO3 的 TerrainLayers 提供。 */
+  setHeightAt(fn: ((x: number, z: number) => number) | null): void;
 }
 ```
 
 - 基本拾取：射线与 `y = 0` 平面求交 → 减原点 → 除以格宽 → 取整。不对任何网格做 raycast。
 - 高立牌修正：先对登记过的包围盒（只取与射线在屏幕上邻近的若干格，按格坐标范围筛）做射线-盒求交，命中最近的那个则返回其格；都没命中再走平面拾取。城镇的建筑、格子图上的高立牌用它；本工单只登记棋子所在格用于自测。
+- **按层高修正（v1.2，M3-WO3 §3.13.6，纸层开着时必须做）**：设了 `heightAt` 时，平面拾取改为：与 `y = 0` 求交 → `h = heightAt(x, z)` → 与 `y = h` 再求交，`h` 变了就再迭代，至多 3 次。不修正的话，0.15 高、53° 俯角下会偏约 0.11 格，点抬高的格的近侧边会选到前面一格。`cellCenter` 返回的 y 同样取 `heightAt(格心)`。层号逻辑只在 `TerrainLayers` 里有一份，`GridPicker` 不复制。
 
 ### 10.4 TokenMover 与寻路
 
@@ -562,6 +567,7 @@ export class TokenMover {
 - 点击可达格：`dispatch(MoveTo { cell })`；每收到一个 `movedStep` 事件，`TokenMover` 走一格（逻辑是逐格结算的——中途可能触发事件而停下，所以表现也逐格跟，不一次性播完整条路径）。
 - 移动中再点别处：`interrupt()`，走完当前一跳后按新目标重新寻路。
 - 棋子每落一格：该格 `selected` 高亮移过来；行动力读数更新；`FollowRig` 跟上。
+- 棋子落点高度（v1.2）：落在 `picker.cellCenter` 给的 y 上（纸层开着时 = 该格层高）；跨层的那一跳起点、终点高度不同，弧线在两者之间插值再叠加弧高，不瞬移。
 - 格耗来自 `TerrainDef.moveCost`（无代步 +1 的规则由 `core` 算好后给到 `cost` 回调，渲染侧不重复实现规则）。
 
 ### 10.5 RegionScene 基线
@@ -569,7 +575,8 @@ export class TokenMover {
 - `enter({ regionId })`：从 `game.world` 取 `RegionState`，建 `GridGround`（N = `RegionDef.size`，现行取值 15 或 10），`setSeed(地区种子)`，把 `tiles[i].terrain` 写进 `tTerrain`；棋子放在玩家所在格；`FollowRig` 对准（近档）。
 - 灯光 `warmDay`。本工单的基线里投影体只有棋子，阴影相机按格子图包围盒收紧即可。接入 M3-WO3 的立牌后（上百张牌投影），改用跟随可视范围的阴影相机 `fitShadowCameraToView`，并按条件更新阴影贴图而不是每帧更新——见 M3-WO3 §3.11。省域图（§3.4）地图小且静止，不改。
 - HUD（`RegionHudLite`）：左上一个「返回大地图」按钮（→ `goto('worldMap', { focus: provinceId }, { style: 'rise' })`），顶栏行动力读数。其余留空。
-- 留给 M3-WO3 的挂点：`RegionScene.batches: Map<string, PaperBatch>`（按图集 id，至多 3 个；地形立牌与翻书波纹）、`fog`、`roads`、`locations`、`dressing`（本工单里都是 `null`）、`GridPicker.registerTall`、`CellHighlighter` 的 `danger / reachable` 种类、`tTerrain` 的标志位。
+- 留给 M3-WO3 的挂点：`RegionScene.batches: Map<string, PaperBatch>`（按图集 id：地形、地点、细节、房屋，外加按省加载的专属地点；地形立牌与翻书波纹）、`fog`、`roads`、`locations`、`dressing`、`layers: TerrainLayers | null`（v1.2，地形纸层）（本工单里都是 `null`）、`GridPicker.registerTall`、`CellHighlighter` 的 `danger / reachable` 种类、`tTerrain` 的标志位。
+- 纸层接入后的进入顺序（v1.2，M3-WO3 §4）：建地面 → 算层号、建纸层、`ground.setLevels`、`picker.setHeightAt(layers.heightAt)` → 算布置（落点 y 取 `layers.heightAt`）→ 立牌与房屋 → 道路 → 迷雾（雾面抬到最高层之上）→ 标注（锚点 y 加所在格层高）。阴影相机的 `maxCasterHeight` = 1.2 + 3 × `levelStep`。单栋房屋（M3-WO3 §3.12）是普通立牌，由 `locations` 按配方摆，不另设挂点。
 - `core` 需要给出视野半径（缺省 1，即棋子周围 3×3）与逐格「在视野内」，供 M3-WO3 §3.4 的视野外变灰；本工单只把该标志写进 `tTerrain.b` 的一位，不做表现。
 
 ---
@@ -601,7 +608,7 @@ export class TokenMover {
 | `tests/render/map/pan-rig.test.ts` | 以指针为锚缩放：缩放前后该屏幕点对应的地面点位移 < 1e-3；拖拽：按下点对应的地面点在拖拽过程中始终位于指针下；越界松手后 0.6s 内回到 `bounds` 内 |
 | `tests/render/camera/follow-rig.test.ts` | `distanceForCells(3, 1, 27, 16/9)` ≈ 3.51（容差 0.01）；把该距离下画面左右边缘投回地面，间距 = 3 格（容差 1e-3）；宽高比改为 4:3 后重算仍满足；近档注视点恒等于棋子格心（无死区），中档棋子在 1 格内移动时注视点不动 |
 | `tests/render/grid/ground-shader.test.ts` | 不定义 `GROUND_ARRAY` 时，`extend.apply` 之后的片元源码不引用 `tGround`；`setSeed` 相同则 `tTerrain` 的 G 通道逐格相同、不同种子则不同（带底纸路径的锚点测试在 M3-WO3 §8.2） |
-| `tests/render/grid/picker.test.ts` | 俯角 53° 相机下，把每个格心投影到屏幕再拾取，得回原下标（30×30 全测）；地图外返回 −1；登记了高包围盒时，点在盒的上半部分返回盒所在格而不是它后面的格 |
+| `tests/render/grid/picker.test.ts` | 俯角 53° 相机下，把每个格心投影到屏幕再拾取，得回原下标（30×30 全测）；地图外返回 −1；登记了高包围盒时，点在盒的上半部分返回盒所在格而不是它后面的格；v1.2：`setHeightAt` 给一块 0.15 高的台面时，把台面上任意点（含近侧边内 0.05 格处）投影到屏幕再拾取得回该格，不设 `heightAt` 时同一点偏到前一格（证明修正是必需的）；`setHeightAt(null)` 后与平面拾取逐格一致 |
 | `tests/render/grid/highlighter.test.ts` | 同一格先后设 `path`、`hover`、`selected`，归并结果为 `selected`；`clear('hover')` 后变回 `path`；无改动时 `flush` 不上传 |
 | `tests/core/world/path.test.ts` | 均匀格耗下路径长度 = 曼哈顿距离；绕过不可通行格；高耗格与绕路的取舍正确；`budget` 不足返回 `null`；`reachable` 的结果与对每格单独 `findPath` 一致（10×10 随机图对拍） |
 | `tests/render/grid/token-mover.test.ts` | 假时钟下 `walk` 5 格共 850ms；`interrupt` 后在当前一跳结束时返回 `'interrupted'`，位置恰在格心；`onStep` 按序触发 |

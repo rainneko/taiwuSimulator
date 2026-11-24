@@ -24,27 +24,46 @@ OUT = ROOT / "docs" / "art-prompts" / "region.md"
 LIST_OUT = ROOT / "tools" / "art" / "region-assets.json"
 
 # 工单 §1 的分类数量；改表时同步改这里和工单
-EXPECTED_COUNTS = {"A": 18, "B": 34, "C": 11, "D": 5, "E": 6, "F": 5, "H": 17, "I": 10}
+EXPECTED_COUNTS = {"A": 18, "B": 34, "C": 11, "D": 5, "E": 6, "F": 5, "H": 17, "I": 10, "J": 10}
 
 # 图集 id（相对内容包的 art/ 目录，不带扩展名）与入库像素密度（每 1 格宽的像素数）
 ATLAS_TERRAIN = "region/region-terrain"
 ATLAS_LOCATIONS = "region/region-locations"
 ATLAS_DETAIL = "region/region-detail"      # 填充小件 + 地面散件（v1.1）
+ATLAS_HOUSES = "region/region-houses"      # 单栋房屋立牌（v1.3.1，pack_atlas 打包）
 PX_TERRAIN = 768          # 入库像素密度（px / 格）：近档约 640px / 格（工单 §1.2），立牌按物理尺寸约 1.2 倍
 PX_LOCATIONS = 640
 PX_SLOT = 768
-ATLAS_SIZE = {ATLAS_TERRAIN: [4096, 2048], ATLAS_LOCATIONS: [4096, 2048], ATLAS_DETAIL: [2048, 1024], "province": [2048, 2048]}
+PX_HOUSE = 768            # 单栋房屋立牌的入库像素密度（px / 格），同地形立牌
+ATLAS_SIZE = {ATLAS_TERRAIN: [4096, 2048], ATLAS_LOCATIONS: [4096, 2048], ATLAS_DETAIL: [2048, 1024], ATLAS_HOUSES: [2048, 1024], "province": [2048, 2048]}
 GROUND_SIZE = 768          # 底纸数组每层边长（medium / low 档、开发期）；一层覆盖 2×2 格 → 384 texel / 格；长图 768×13824 < WebP 上限 16383
 GROUND_SIZE_HIGH = 1024    # high 档（v1.2）：512 texel / 格；只出逐层文件并转 KTX2，不出长图（1024×18 超过 WebP 上限）
 
 # ── 公共段落 ────────────────────────────────────────────────────────────────
 # 80% 纸模立体（厚卡纸、纸芯切口、层间接触阴影、模切轮廓）+ 20% 水墨（宣纸纤维、局部淡墨点缀）。
+# v1.2（2026-11-24）：按 papertrails 截图的做法改为「模切纸片 + 正面印手绘插画」，纸层只在树冠、屋顶、山石处叠两三层；
+# 只写质感，不写任何具体作品或游戏的名字（参考截图由出图方另行附上）。
 
 STYLE = (
-    "手工纸模（papercraft）风格的游戏美术素材。物体由多层厚卡纸裁切、叠贴而成："
-    "看得出每层纸的厚度，切口露出一线白色纸芯，上下两层纸之间有一道细窄的接触阴影；"
-    "造型概括，轮廓是干净利落的模切线。配色低饱和，以平涂为主，纸面带细微的宣纸纤维纹理；"
+    "纸模立体书（papercraft diorama）风格的游戏美术素材，质感以随附的参考截图为准："
+    "每个物体是一张从厚卡纸上模切下来的纸片，纸片正面印着一幅手绘插画——水粉、水彩的笔触质地，"
+    "带装饰性的图案细节（叶片纹样、瓦片、木纹、石面的皴擦），轮廓与结构用干净的深色细线勾出，纸面有细微的宣纸纤维纹理；"
+    "树冠、屋顶、山石可以由两三张纸片前后叠贴，层间有一道细窄的接触阴影，切口露出一线白色纸芯。"
+    "造型概括、可爱而不幼稚，剪影干净利落。配色温和、略低饱和：宣纸米白、赭石、土黄、苔绿、靛青与墨色为主，"
     "只在局部用少量淡墨晕染、点苔或枯笔皴擦作点缀（约占画面两成），不要大面积水墨渲染。"
+    "淡墨只用来晕染和点苔，不要形成任何像文字、符号或印章的笔画。"
+    "画面里没有任何文字、字母、数字、印章、签名、水印、边框，也没有人物和动物。"
+)
+
+# 试点反馈（2026-11-24）：底纸沿用 STYLE 的「每个物体是一张模切纸片、叠贴、接触阴影」时，模型会把草簇、树冠画成站立件，
+# 叠片边缘还有一圈暗沿。底纸单用 GROUND_STYLE：整张是一张平的印刷纸面，什么都不立起来，没有阴影。
+GROUND_STYLE = (
+    "纸模立体书（papercraft diorama）风格的游戏美术素材，质感以随附的参考截图里的地面为准："
+    "整幅是一张平铺的厚卡纸，纸面上印着一幅手绘插画——水粉、水彩的笔触质地，带装饰性的图案细节（草叶、落叶、苔点、石纹），"
+    "轮廓用干净的深色细线勾出，纸面有细微的宣纸纤维纹理。"
+    "所有元素都是印在这张纸上的平面纹样，平贴在纸面里：没有立起来的纸片，没有叠贴的纸层，没有纸芯白边，没有任何阴影或暗沿。"
+    "画面安静、元素细碎，比立在上面的树木、房屋立牌简单得多。"
+    "配色温和、略低饱和：宣纸米白、赭石、土黄、苔绿、靛青与墨色为主，只在局部用少量淡墨晕染或点苔作点缀（约占画面两成）。"
     "淡墨只用来晕染和点苔，不要形成任何像文字、符号或印章的笔画。"
     "画面里没有任何文字、字母、数字、印章、签名、水印、边框，也没有人物和动物。"
 )
@@ -122,47 +141,47 @@ GROUND_PIECE = (
 TERRAINS = [
     # key, 标签, 底纸描述, 主色, noRotate, 植被(随季节染色), [立牌 A, 立牌 B]
     ("plain", "原野",
-     "低矮的草甸：短草用一簇簇小片叠纸表示，均匀铺开，草簇之间零星几笔淡墨草叶和极小的白色花点", "灰绿", False, True,
+     "低矮的草甸：印着一簇簇细碎的小草纹样，均匀铺开、平贴在纸面上，草簇之间零星几笔淡墨草叶和极小的白色花点", "灰绿", False, True,
      [("几株高低不齐的野草，细长的叠纸草叶向外弯垂，中间挺出两三根毛茸茸的草穗", 0.45, 0.9),
       ("一块圆润的卵石，半掩在三两朵小野花后面", 0.45, 1.2)]),
     ("lake", "湖泊",
-     "平静的水面：两三层浅色纸叠出一道道舒缓的水纹弧线，弧线朝向各不相同、均匀散布，淡墨轻轻晕出深浅；整幅都是开阔的水面，看不到岸", "灰青蓝", False, False,
+     "平静的水面：印着一道道舒缓的浅色水纹弧线，弧线朝向各不相同、均匀散布，淡墨轻轻晕出深浅；整幅都是开阔的水面，看不到岸", "灰青蓝", False, False,
      [("一丛芦苇，十来根细秆，顶端是蓬松的浅色羽状穗，整体向一侧微弯", 0.55, 0.6),
       ("一只空的小木船，船头系在一根歪斜的木桩上；船身像是一张纸对折而成，船底沿水线裁平", 0.45, 1.6)]),
     ("farmland", "农田",
-     "整齐的田垄：一垄一条细长纸带，垄与垄平行、横贯画面，垄间露出深一号的底纸，每垄上有一排均匀的小苗点", "黄绿与土黄", True, True,
+     "整齐的田垄：一垄一条细长的色带，垄与垄平行、横贯画面，垄间露出深一号的底纸，每垄上有一排均匀的小苗点", "黄绿与土黄", True, True,
      [("一个圆顶的草垛，草秆用细纸条层层叠出", 0.52, 1.0),
       ("田边一架木制水车：一个大木轮，轮缘一圈小木斗，旁边接着一段木槽", 0.58, 1.0)]),
     ("woods", "林地",
-     "疏朗的林地：从正上方看去，一个个圆润的叠纸树冠均匀散布，树冠之间露出林下铺着落叶的地面", "中绿", False, True,
+     "林下的地面：铺满细碎的落叶、苔藓点和零星的小蕨叶纹样，夹着几处深一号的苔绿色斑；不画树冠和树干（树由立牌表现），颜色比原野深一号、更偏苔绿", "中绿", False, True,
      [("一棵圆冠阔叶树：树冠由三四层由大到小的圆片叠成，树干笔直", 0.62, 0.8),
       ("两棵锥形的针叶树，一高一矮，树冠是一层层叠起的锯齿形纸片", 0.62, 0.75)]),
     ("jungle", "密林",
-     "密林的树冠层：大小不一的叶团层层叠压，几乎不露地面，深浅不同的绿纸交错，叶团之间偶有一点深色空隙", "深墨绿", False, True,
+     "密林的林下：厚厚的苔层上铺满大小不一的阔叶、蕨叶与缠绕的细藤纹样，几乎不露泥土，深浅不同的绿交错；不画树冠和树干（树由立牌表现）", "深墨绿", False, True,
      [("一棵高大的古树：宽阔的伞形树冠，树冠下垂着几条藤蔓和气根", 0.65, 0.9),
       ("一丛大叶植物：五六片宽大的长叶从根部向外舒展，叶片层层重叠", 0.52, 1.1)]),
     ("garden", "园林",
-     "园林的铺地：均匀散布的一小团一小团修剪过的灌木，灌木之间是冰裂纹的碎石铺地", "青绿与米白", False, True,
+     "园林的铺地：冰裂纹的碎石铺地，石缝里长着细细的青苔，零星散落几片落叶和小花瓣；不画灌木和树（由立牌表现）", "青绿与米白", False, True,
      [("一棵修剪成三层圆团的造型松，枝干弯曲", 0.58, 0.85),
       ("一块瘦高的太湖石，石身布满玲珑的孔洞", 0.58, 0.6)]),
     ("mountain", "山岳",
-     "山地的俯视：交错的折纸棱线把画面分成大小不一的多面块面，块面平涂，棱线处用淡墨皴擦", "青灰", False, False,
-     [("三座前后错开的尖山峰，一层纸一座峰，前低后高", 0.65, 1.2),
-      ("一座陡峭的孤峰，山腰横缠一条细长的白色纸云", 0.65, 0.7)]),
+     "山地的俯视：交错的细棱线把画面分成大小不一的多面块面，块面平涂，棱线处用淡墨皴擦", "青灰", False, False,
+     [("三座前后错开的尖山峰，一层纸一座峰，前低后高", 0.5, 1.2),          # v1.3.1：0.65 → 0.5（用户：山太大，挤进邻格）
+      ("一座陡峭的孤峰，山腰横缠一条细长的白色纸云", 0.5, 0.7)]),
     ("cave", "洞穴",
-     "布满孔洞的岩石地表：许多大小相近的深色小孔洞与裂隙均匀分布，每个洞口边缘是一圈圈向内凹陷的纸层", "灰褐与深灰", False, False,
+     "布满孔洞的岩石地表：许多大小相近的深色小孔洞与裂隙均匀分布，每个洞口边缘用一圈圈由浅到深的色环表示凹陷", "灰褐与深灰", False, False,
      [("一个拱形岩洞口：外圈是粗糙的岩石，洞内是层层向后退的深色纸，越往里越黑", 0.55, 1.1),
       ("一段裂开的岩壁，中间一道深黑的竖向岩缝，缝口垂着几缕枯藤", 0.58, 0.8)]),
     ("stoneForest", "石林",
-     "密集石柱的顶面：大小不一的多边形纸片紧挨着拼满画面，像一根根石柱的平顶，缝隙里是深色", "浅灰白", False, False,
+     "密集石柱的顶面：大小不一的多边形块面紧挨着拼满画面，像一根根石柱的平顶，缝隙里是深色", "浅灰白", False, False,
      [("一组五六根高低不一的细长石柱，柱身有横向的层理", 0.65, 0.9),
       ("一根孤立的尖锥形石笋，顶端略弯", 0.62, 0.45)]),
     ("hill", "丘陵",
-     "缓丘地表：许多小圆丘错落散布，每个圆丘是三四圈由浅到深的叠纸等高线，圆丘之间是平地", "黄绿灰", False, True,
+     "缓丘地表：许多小圆丘错落散布，每个圆丘是三四圈由浅到深的印刷等高线，圆丘之间是平地", "黄绿灰", False, True,
      [("一个圆缓的土丘，丘顶并排两三棵小圆树", 0.52, 1.4),
       ("一段层层叠起的梯田缓坡，三四级弧形台阶", 0.48, 1.5)]),
     ("vale", "花谷",
-     "花谷的草地：草地上均匀散落着小团开花矮树的树冠与飘落的花瓣，花是极小的浅色纸点", "柔粉与嫩绿", False, True,
+     "花谷的草地：细碎的小草纹样上均匀散落着飘落的花瓣与极小的浅色花点；不画花树和灌木（由立牌表现）", "柔粉与嫩绿", False, True,
      [("一棵开满浅粉色花的树，花团由许多小圆纸片堆成，枝干虬曲", 0.62, 0.95),
       ("一丛开花的矮灌木，花朵比叶子多", 0.45, 1.3)]),
     ("mulberry", "桑园",
@@ -170,11 +189,11 @@ TERRAINS = [
      [("一棵低矮的桑树：主干粗短，枝头被剪成拳头状，冒出几簇宽大的心形叶", 0.52, 1.0),
       ("两三只叠放的圆竹筐，筐里堆满宽大的心形叶", 0.45, 1.2)]),
     ("canyon", "峡谷",
-     "干裂的岩层地表：弯曲交错的深沟与岩脊，沟壁露出层层叠叠的纸边", "赭红灰", False, False,
+     "干裂的岩层地表：弯曲交错的深沟与岩脊，沟壁用一道道平行的细线表示岩层", "赭红灰", False, False,
      [("一段层状的岩壁：七八层深浅交替的纸横向叠起，顶部参差", 0.55, 1.3),
       ("一座风蚀的岩柱，上粗下细，顶上压着一块扁平的岩石", 0.62, 0.55)]),
     ("marsh", "沼泽",
-     "沼泽：泥水与苔草斑驳相间，一个个小水洼用深色的光面纸，草丛用细纸条，均匀散布", "灰绿褐", False, True,
+     "沼泽：泥水与苔草斑驳相间，一个个深色的小水洼与细长的苔草纹样均匀散布", "灰绿褐", False, True,
      [("几根顶着深褐色圆柱形穗的蒲草，叶片细长如剑", 0.52, 0.6),
       ("一截半浸在水里的朽木桩，桩顶长着几朵小蘑菇", 0.45, 0.8)]),
     ("herbGarden", "药园",
@@ -186,7 +205,7 @@ TERRAINS = [
      [("一棵枯树：枝杈光秃、扭曲伸展，没有一片叶子", 0.62, 0.9),
       ("一截倒伏的枯木横躺着，旁边几块风化的碎石", 0.45, 1.6)]),
     ("abyss", "暗渊",
-     "破碎的黑色岩面：许多不规则的小裂口向下塌陷，裂口内是一层层更深的纸，个别裂口边缘透出一线冷蓝色微光", "墨黑与暗蓝", False, False,
+     "破碎的黑色岩面：许多不规则的小裂口向下塌陷，裂口内由外向里一圈比一圈更深，个别裂口边缘透出一线冷蓝色微光", "墨黑与暗蓝", False, False,
      [("几根歪斜的黑色尖岩，像从地下刺出来", 0.62, 0.9),
       ("一块裂成两半的黑色巨石，裂缝里透出一线冷蓝色微光", 0.52, 1.1)]),
 ]
@@ -196,8 +215,8 @@ TERRAINS = [
 CELL_DENSITY = {
     "lake": (0, 1), "farmland": (0, 1),
     "plain": (0, 2), "waste": (1, 2), "cave": (1, 2), "canyon": (1, 2), "abyss": (1, 2), "herbGarden": (1, 2),
-    "hill": (1, 3), "marsh": (1, 3),
-    "mountain": (2, 3),
+    "hill": (2, 3), "marsh": (1, 3),     # 丘陵不抬层（用户 2026-11-24），每格至少一个土丘或一段梯田
+    "mountain": (1, 2),            # v1.3.1：(2, 3) → (1, 2)，山牌缩到 0.5 高后一格一两座
     "garden": (2, 4), "vale": (2, 4), "stoneForest": (2, 4), "mulberry": (3, 4),
     "woods": (4, 6),
     "jungle": (5, 7),
@@ -270,9 +289,9 @@ MAX_FILLERS, MAX_PIECES = 8, 3
 WATER_TERRAINS = ("lake",)
 SHORE = (("reeds", "rock.0", "tuft.1"), (1, 3), 0.12)     # (岸边件, 陆地每格张数, 岸带宽[格])
 
-# 试点批次（工单 §7）：先出这 6 张，定下密度与风格基准后再批量出其余的
-PILOT = ("terrain.ground.plain", "terrain.ground.mountain", "terrain.standee.woods.0",
-         "terrain.standee.mountain.0", "loc.village.0", "region.road", "filler.bush.0", "ground.piece.leaves")
+# 试点批次（工单 §7；总监 2026-11-24 改为这 6 张）：先出这 6 张，定下密度与风格基准后再批量出其余的
+PILOT = ("terrain.ground.plain", "terrain.ground.woods", "terrain.standee.woods.0",
+         "terrain.standee.mountain.0", "loc.village.0", "region.road")   # 总监 2026-11-24 指定；出图指引见 region-pilot.md
 
 # 聚居类地块（city / sectSeat / town / fort / village）共用一张地基底纸，层号 17
 SETTLEMENT_GROUND = ("settlement", "聚居地基", "聚居地的铺地：夯土地面上铺着规则的石板，拼缝整齐，偶有几处磨损和小草", "暖灰", False)
@@ -350,6 +369,28 @@ DECOR = [
      "flat-rgba", (256, 256)),
 ]
 
+# ── 单栋房屋立牌（v1.3.1，工单 §3.12）────────────────────────────────────────
+# 用户 2026-11-24：纸盒房子（程序搭形 + 部件贴图）和手绘插画立牌风格不搭，改成一栋一栋单独画的立牌，
+# 按聚居配方一栋一栋摆进格里（preview_grid.place_houses）。纸盒方案的副本在 docs/shelved/house-boxes/。
+# houseKind 供配方选用：cottage 小屋、tile 瓦房、long 长屋、shop 二层木楼、tower 瞭望楼、hall 殿阁。
+HOUSE_CUE = ("这是一栋单独的房子，不是一组建筑：除上面写到的东西以外，周围不画院墙、篱笆、树木、杂物，也不画别的房子；"
+             "门、窗画成关着的；门楣、匾额如果有，一律留空白，不写任何字。")
+
+HOUSES = [
+    # artKey, houseKind, 标签, 描述, 立起后的高度[格], 宽高比 w/h
+    ("house.cottage.0", "cottage", "茅屋 A", "一间低矮的茅草顶小屋：厚厚的金黄偏灰茅草顶压得很低，黄褐色夯土墙，正面一扇窄木门、一扇小方窗", 0.28, 1.15),
+    ("house.cottage.1", "cottage", "茅屋 B", "一间茅草顶小屋：米白粉墙配深褐色木框，正面一扇木门，侧墙边靠着一小捆柴禾", 0.28, 1.1),
+    ("house.cottage.2", "cottage", "木屋", "一间深褐色木板瓦顶的小木屋：原木横叠的墙，门口一级石阶", 0.27, 1.05),
+    ("house.tile.0", "tile", "瓦房 A", "一栋两开间的民居：青灰瓦顶，米白粉墙，深褐色木柱和横梁，一门一窗", 0.33, 1.2),
+    ("house.tile.1", "tile", "瓦房 B", "一栋青灰瓦顶、青砖墙的宅子：正中一扇上沿为圆拱的黑漆木门，屋顶一侧一根方砖烟囱", 0.34, 1.15),
+    ("house.long.0", "long", "长屋 A", "一栋茅草顶的长屋：黄褐色夯土墙，正面两扇木门、三扇小窗", 0.3, 1.7),
+    ("house.long.1", "long", "长屋 B", "一栋青灰瓦顶的长条仓房：木板墙，正面一扇宽大的双开木门", 0.31, 1.75),
+    ("house.shop.0", "shop", "二层木楼", "一栋窄而高的二层木楼：灰瓦屋檐上下两层挑出，楼上一排格窗，楼下门前挂一盏素面灯笼", 0.45, 0.85),
+    ("house.tower.0", "tower", "瞭望木楼", "一座原木搭的高脚瞭望楼：四根粗木柱撑着一间带斜顶的小木屋，柱间有交叉的斜撑和一架木梯", 0.5, 0.6),
+    ("house.hall.0", "hall", "殿阁", "一座重檐的殿阁：两层青灰瓦屋檐，檐角微微上翘，四根朱红色圆柱，下面一道青石台基与三级石阶", 0.55, 1.3),
+]
+
+
 # ── 专属地点槽位 ────────────────────────────────────────────────────────────
 # 槽位表由内容包负责人填写（见工单 §5）；这里只给模板与建筑原型的通用备选清单。
 
@@ -402,9 +443,14 @@ def shape_phrase(aspect: float) -> str:
     return "整体剪影接近方形。"
 
 
+# 底纸的主色若要和立牌不同，在这里覆盖（立牌仍用 TERRAINS 里的主色）。
+# 山岳：「青灰」与湖泊的「灰青蓝」在底纸上太近（执行主管 2026-11-24，批次工单 region-batch-1.md 同一叮嘱）。
+GROUND_COLOR = {"mountain": "偏暖的青灰，带一点赭石、土褐的岩土色，要和湖泊的冷蓝、原野的草绿一眼分得开"}
+
+
 def ground_prompt(label: str, desc: str, color: str, no_rotate: bool) -> str:
     common = GROUND.format(rotation=ROT_FIXED if no_rotate else ROT_FREE)
-    return f"{STYLE}{LIGHT_FLAT}\n\n内容：「{label}」地形的地表——{desc}。主色：{color}。\n\n{common}"
+    return f"{GROUND_STYLE}\n\n内容：「{label}」地形的地表——{desc}。主色：{color}。\n\n{common}"
 
 
 def standee_prompt(desc: str, aspect: float, color: str | None = None, layered: bool = False, cue: str = "") -> str:
@@ -475,6 +521,10 @@ def assets(slots: list[dict]) -> list[dict]:
         items.append({"artKey": f"ground.piece.{key}", "section": "I", "label": f"地面散件：{label}", "kind": "flat",
                       "atlas": ATLAS_DETAIL, "atlasSize": ATLAS_SIZE[ATLAS_DETAIL], "pxPerUnit": PX_TERRAIN,
                       "height": size, "aspect": 1.0, "anchor": [0.5, 0.5]})
+    for key, hk, label, _desc, h, a in HOUSES:
+        items.append({"artKey": key, "section": "J", "label": f"房屋：{label}", "kind": "standee", "houseKind": hk,
+                      "atlas": ATLAS_HOUSES, "atlasSize": ATLAS_SIZE[ATLAS_HOUSES], "pxPerUnit": PX_HOUSE,
+                      "height": h, "aspect": a, "anchor": [0.5, 0.0]})
     for it in items:
         if it["artKey"] in PILOT:
             it["pilot"] = True
@@ -507,11 +557,12 @@ def build(slots: list[dict]) -> tuple[str, dict[str, int]]:
                "> **开对话时先定风格（用户 2026-11-24）**：先给 GPT 看 papertrails（https://github.com/xikhar/papertrails ，MIT）的链接和几张它的画面截图，说明目标是这种纸模立体书质感（纸有厚度、模切白边、层叠投影、低饱和）；"
                "再附一张 `preview_grid.py` 的近档占位预览，说明一格的尺度与构图。之后再贴下面的 prompt。\n"
                "> 出图后按 artKey 命名保存为 `art/region/raw/<artKey>.png`，再走工单 §6 的后处理流水线。\n"
-               "> **先出标【试点】的 8 张**（工单 §7）：跑完 key_alpha / check_tile / preview_grid、定下密度与风格基准后再批量出其余的。"
+               "> **先出标【试点】的 6 张**（工单 §7；逐步指引见 `docs/art-prompts/region-pilot.md`）：跑完 key_alpha / check_tile / preview_grid、定下密度与风格基准后再批量出其余的。"
                "批量出图时在同一个对话里连续生成，以第一张通过验收的图作为风格基准（风格参照只用 papertrails 截图与本项目自己出的图）。\n")
 
     out.append("\n## A. 地形底纸\n")
     for key, label, desc, color, no_rot, _s, _st in TERRAINS:
+        color = GROUND_COLOR.get(key, color)
         size = "1024×1024，可平铺" + ("，行列固定朝向" if no_rot else "")
         item("A", f"terrain.ground.{key}", f"底纸：{label}", size, ground_prompt(label, desc, color, no_rot))
     k, label, desc, color, no_rot = SETTLEMENT_GROUND
@@ -550,6 +601,10 @@ def build(slots: list[dict]) -> tuple[str, dict[str, int]]:
     for key, label, desc, _size in GROUND_PIECES:
         item("I", f"ground.piece.{key}", f"地面散件：{label}", "1024×1024，透明底",
              f"{STYLE}{LIGHT_FLAT}\n\n内容：{desc}。\n\n{GROUND_PIECE}")
+
+    out.append("\n## J. 单栋房屋（v1.3.1：一栋一张立牌，按聚居配方一栋一栋摆进格里；沿用风格基准 `terrain.standee.woods.0`）\n")
+    for key, _hk, label, desc, _h, a in HOUSES:
+        item("J", key, f"房屋：{label}", "1024×1024，透明底", standee_prompt(desc, a, cue=HOUSE_CUE))
 
     if slots:
         out.append("\n## G. 专属地点（内容包槽位）\n")
@@ -636,6 +691,14 @@ def check(slots: list[dict]) -> list[str]:
     used = {k for v in DETAIL_POOLS.values() for k in v[0]} | {k for v in DETAIL_POOLS.values() for k in v[2]}
     if unused := (fkeys | pkeys) - used:
         errs.append(f"这些件没有任何地形用到：{sorted(unused)}")
+    kinds = {hk for _k, hk, *_r in HOUSES}
+    if kinds != {"cottage", "tile", "long", "shop", "tower", "hall"}:
+        errs.append(f"HOUSES 的 houseKind 须覆盖配方用到的 6 种，现为 {sorted(kinds)}")
+    for key, _hk, _l, desc, h, _a in HOUSES:
+        if bad := lint(desc, BANNED_ALL):
+            errs.append(f"{key} 的描述含易误导的词：{bad}")
+        if not 0.25 <= h <= 0.6:
+            errs.append(f"{key} 的高度 {h} 不在 0.25–0.6（比树矮、比棋子高）")
     for key, *_rest in DECOR:
         desc = _rest[4]
         if bad := lint(desc, BANNED_ALL):

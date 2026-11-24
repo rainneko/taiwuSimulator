@@ -1,0 +1,28 @@
+# 地区场景第二批：聚居点里的东西——单栋房屋立牌 10 张 + 前景小件 6 张，共 16 张。
+# 一行一个 artKey（= assets/art-source/region/batch2/ 下的文件名，不含扩展名）；# 开头是注释。
+# 出图指引：docs/art-prompts/region-batch-2.md；流水线：bash tools/art/batch.sh batch2
+
+# 预览时聚居格按配方摆单栋房屋，并放 5 个聚居点（村、镇、城、寨、门派驻地各一）
+@preview --houses --settlements 5
+
+# 第 1 组 定尺度的两栋（2）
+house.cottage.0
+house.hall.0
+
+# 第 2 组 其余房屋（8）
+house.cottage.1
+house.cottage.2
+house.tile.0
+house.tile.1
+house.long.0
+house.long.1
+house.shop.0
+house.tower.0
+
+# 第 3 组 前景小件（6）
+loc.prop.fence
+loc.prop.wall
+loc.prop.lantern
+loc.prop.poles
+loc.prop.tree
+loc.prop.steps

@@ -50,7 +50,8 @@ def scan(art_root: Path, rep: al.Report) -> dict[str, dict]:
             if bad:
                 rep.error(al.rel(p), "图集格式", f"缺字段 {bad}（M3-WO1 §2.6 AtlasJson）")
                 continue
-            if data["feather"] < al.MIN_FEATHER or data["padding"] < al.MIN_PADDING:
+            # 不透明图集（房屋部件，v1.3）没有 alpha 边，不需要羽化
+            if (not data.get("opaque") and data["feather"] < al.MIN_FEATHER) or data["padding"] < al.MIN_PADDING:
                 rep.error(al.rel(p), "图集格式", f"feather={data['feather']}、padding={data['padding']} 低于下限 2 / 4")
             for f in data["frames"]:
                 put(f["name"], {"atlas": rid, "frame": f["name"]}, al.rel(p))

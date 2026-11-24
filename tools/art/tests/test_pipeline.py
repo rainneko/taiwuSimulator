@@ -190,13 +190,13 @@ class RegionPromptsTest(unittest.TestCase):
     def test_check_passes(self):
         r = self.run_gen("--check")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("106 条", r.stdout)
+        self.assertIn("116 条", r.stdout)
 
     def test_list_counts_match(self):
         items = json.loads((TOOLS / "region-assets.json").read_text(encoding="utf-8"))["items"]
         from collections import Counter
         c = Counter(it["section"] for it in items)
-        self.assertEqual(dict(c), {"A": 18, "B": 34, "C": 11, "D": 5, "E": 6, "F": 5, "H": 17, "I": 10})
+        self.assertEqual(dict(c), {"A": 18, "B": 34, "C": 11, "D": 5, "E": 6, "F": 5, "H": 17, "I": 10, "J": 10})
         for it in items:
             if it["kind"] == "standee" and it["section"] == "B":
                 self.assertTrue(0.45 <= it["height"] <= 0.65)
@@ -204,7 +204,7 @@ class RegionPromptsTest(unittest.TestCase):
                 and it["terrain"] != "settlement"}
         self.assertEqual(len(dens), 17)
         self.assertTrue(all(0 <= lo <= hi <= 7 for lo, hi in dens.values()))
-        self.assertEqual(sum(1 for it in items if it.get("pilot")), 8)
+        self.assertEqual(sum(1 for it in items if it.get("pilot")), 6)
         for it in items:
             if it["kind"] == "ground":
                 pool = it["fillers"]

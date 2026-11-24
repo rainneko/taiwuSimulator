@@ -1,0 +1,46 @@
+# 地区场景第一批：五种地形（原野、林地、山岳、湖泊、沼泽）+ 聚居地基的完整切片，共 35 张。
+# 一行一个 artKey（= assets/art-source/region/batch1/ 下的文件名，不含扩展名）；# 开头是注释。
+# 出图指引：docs/art-prompts/region-batch-1.md；流水线：bash tools/art/batch.sh batch1
+
+# 第 1 组 底纸（5）
+terrain.ground.woods
+terrain.ground.mountain
+terrain.ground.lake
+terrain.ground.marsh
+terrain.ground.settlement
+
+# 第 2 组 主体立牌（8）
+terrain.standee.woods.1
+terrain.standee.mountain.1
+terrain.standee.plain.0
+terrain.standee.plain.1
+terrain.standee.lake.0
+terrain.standee.lake.1
+terrain.standee.marsh.0
+terrain.standee.marsh.1
+
+# 第 3 组 填充小件（13）
+filler.bush.0
+filler.fern
+filler.tuft.0
+filler.tuft.1
+filler.reeds
+filler.flowers.0
+filler.flowers.1
+filler.rock.0
+filler.rock.1
+filler.mushrooms
+filler.stump
+filler.log
+filler.thorn
+
+# 第 4 组 地面散件（9）
+ground.piece.grass
+ground.piece.dirt
+ground.piece.pebbles
+ground.piece.leaves
+ground.piece.moss
+ground.piece.roots
+ground.piece.needles
+ground.piece.cracks
+ground.piece.puddle
