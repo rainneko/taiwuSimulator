@@ -3,9 +3,10 @@
  */
 import type { RegionData } from './regionData';
 import { gWarp, type WarpPhase } from './warp';
+import { TERRAIN_ART_DEFAULTS } from './terrainArt';
 
-/** 可调参数：层厚（格）、开关。low 画质档或开关关 = v1.2 平面表现。 */
-export const layerConfig = { step: 0.05, enabled: true };
+/** 运行时参数：层厚（格，= terrain-art.json 的 levelStep）、开关。low 画质档或开关关 = v1.2 平面表现。 */
+export const layerConfig = { step: TERRAIN_ART_DEFAULTS.levelStep, enabled: true };
 /** 同种地形内部更高 / 更深台阶的内缩（格）。 */
 export const LEVEL_INSET = 0.07;
 /** 落点离层边界不足此距离的拒绝。 */

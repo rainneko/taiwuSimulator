@@ -2,15 +2,16 @@
  * 有机交界（WO3 v1.2 §3.2.3）：判定「这一点画成哪种地形」前先扭曲坐标，最大位移 0.16 格。
  * TS 与 GLSL 两份实现必须一致：着色器画交界，布置用 ownerAt 判定落点。
  */
-import { mulberry32 } from './regionData';
+import { hf } from './hash';
 
 export const WARP_AMP = 0.16;
 
 export type WarpPhase = [number, number, number, number];
 
+/** 相位 = 2π·hf(seed, 900 + k)，与 preview_grid.warp 相同。 */
 export function warpPhase(seed: number): WarpPhase {
-  const r = mulberry32(seed ^ 0x9e3779b9);
-  return [r() * 6.2832, r() * 6.2832, r() * 6.2832, r() * 6.2832];
+  const ph = (k: number) => 2 * Math.PI * hf(seed, 900 + k);
+  return [ph(0), ph(1), ph(2), ph(3)];
 }
 
 export function gWarp(x: number, y: number, p: WarpPhase): [number, number] {

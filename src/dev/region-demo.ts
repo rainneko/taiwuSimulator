@@ -35,11 +35,14 @@ const regen = () => scenes.goto('region', { region: makeSampleRegion(Number(size
 document.getElementById('regen')!.onclick = regen;
 size.onchange = regen;
 const layersEl = document.getElementById('layers') as HTMLInputElement, stepEl = document.getElementById('step') as HTMLSelectElement;
+const housesEl = document.getElementById('houses') as HTMLInputElement;
 const rebuild = () => {
-  layerConfig.enabled = layersEl.checked; layerConfig.step = Number(stepEl.value);
+  layerConfig.enabled = layersEl.checked;
+  region.params.levelStep = Number(stepEl.value);     // = terrain-art.json 的 levelStep
+  region.params.houses = housesEl.checked;
   if (region.region) void scenes.goto('region', { region: region.region }, { style: 'fold' });
 };
-layersEl.onchange = rebuild; stepEl.onchange = rebuild;
+layersEl.onchange = rebuild; stepEl.onchange = rebuild; housesEl.onchange = rebuild;
 for (const z of [0, 1, 2]) document.getElementById(`z${z}`)!.onclick = () => region.rig.setZoom(z);
 document.getElementById('follow')!.onclick = () => { region.onKey(new KeyboardEvent('keydown', { key: 'f' })); };
 
@@ -53,7 +56,7 @@ function drawLabels(): void {
     labels.replaceChildren(...r.locations.map((l) => Object.assign(document.createElement('span'), { textContent: l.name })));
   }
   r.locations.forEach((l, i) => {
-    region.cellCenter(l.cell, v); v.y = 1.3; v.z -= 0.2;
+    region.locationLabelAt(l.cell, v);
     v.project(region.rig.camera);
     const el = labels.children[i] as HTMLElement;
     el.style.left = `${(v.x * 0.5 + 0.5) * innerWidth}px`;

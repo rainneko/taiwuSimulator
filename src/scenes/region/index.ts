@@ -9,3 +9,7 @@ export * from './levels';
 export * from './TerrainLayers';
 export * from './dressing';
 export * from './warp';
+export * from './houseRecipes';
+export * from './LocationGroups';
+export * from './terrainArt';
+export * from './hash';

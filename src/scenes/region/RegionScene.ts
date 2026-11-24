@@ -14,6 +14,9 @@ import { Visibility } from './Visibility';
 import { warpPhase, type WarpPhase } from './warp';
 import { awayFromLevelEdge, heightAt, layerConfig, makeLevelGrid, type LevelGrid } from './levels';
 import { buildLayerGeometry } from './TerrainLayers';
+import { planLocationGroups, type LocationGroup } from './LocationGroups';
+import { MAX_HOUSES_PER_CELL } from './houseRecipes';
+import { parseTerrainArt, TERRAIN_ART_DEFAULTS, type TerrainArtParams } from './terrainArt';
 import { buildGroundAtlas } from './GroundAtlas';
 import { GridGround, Hl } from './GridGround';
 import { findPath, pathCost } from './pathfinding';
@@ -50,6 +53,15 @@ export class RegionScene implements IScene {
   /** 填充小件 + 地面散件；远档折平隐藏。 */
   detailBatch: PaperBatch | null = null;
   vis: Visibility | null = null;
+  /** 单栋房屋立牌（region/region-houses）；回退时为 null。 */
+  houseBatch: PaperBatch | null = null;
+  groups: LocationGroup[] = [];
+  /** terrain-art.json 顶层参数（levelStep、houses）；preload 时从内容包读，缺省见 TERRAIN_ART_DEFAULTS。 */
+  params: TerrainArtParams = { ...TERRAIN_ART_DEFAULTS };
+  /** 房屋图集缺失时是否用占位图集画房子（开发期 true；正式包置 false = 回退整张聚落立牌）。 */
+  allowPlaceholderHouses = import.meta.env.DEV;
+  private houseArt: Atlas | null = null;
+  private paramsLoaded = false;
   private art: Atlas | null = null;
   private fillerHandles: number[] = [];
   private flatHandles: number[] = [];
@@ -96,6 +108,13 @@ export class RegionScene implements IScene {
   async preload(_assets: AssetCache, signal: AbortSignal): Promise<void> {
     if (!this.atlas) this.atlas = await buildGroundAtlas(signal);
     this.art ??= makePlaceholderAtlas();   // 真实图集接入前的占位
+    if (!this.paramsLoaded) {
+      this.paramsLoaded = true;
+      const json = await _assets.loadJson<unknown>(`${import.meta.env.BASE_URL}content/base/art/region/terrain-art.json`, signal);
+      if (json) this.params = parseTerrainArt(json);
+    }
+    // region/region-houses 图集的加载待 AssetCache 支持图集后接入；目前只有占位
+    this.houseArt = this.allowPlaceholderHouses ? this.art : null;
   }
 
   enter(params: unknown, _from: Screen | null): void {
@@ -115,6 +134,7 @@ export class RegionScene implements IScene {
     this.vis?.update(dt);
     this.updateDetailLayer();
     this.terrainBatch?.update(dt);
+    this.houseBatch?.update(dt);
     this.detailBatch?.update(dt);
     const c = this.rig.closeness();
     this.ground?.setFibre(c < 0.5 ? FIBRE_FAR + (FIBRE_MID - FIBRE_FAR) * c * 2 : FIBRE_MID + (FIBRE_NEAR - FIBRE_MID) * (c - 0.5) * 2);
@@ -256,6 +276,7 @@ export class RegionScene implements IScene {
     const phase = this.phase = warpPhase(r.seed ?? 0);
     g.setWarpPhase(phase);
     // 地形纸层：low 画质 / 开关关 → 层号全 0、不建侧壁（= v1.2 平面）
+    layerConfig.step = this.params.levelStep;
     const layered = layerConfig.enabled && ui.quality.peek() !== 'low';
     const lv = this.levels = makeLevelGrid(r, layered);
     g.setLevels(lv.level);
@@ -272,23 +293,71 @@ export class RegionScene implements IScene {
     this.rig.follow = this.tokenPos;
     this.buildDressing(r, phase);
 
-    // 地点立牌：从地面立起，由近及远
-    for (const loc of r.locations) {
-      const card = this.makeStandee(loc);
-      const c = this.cellCenter(loc.cell);
-      card.position.set(c.x, 0.001 + this.heightAt(c.x, c.z - 0.2), c.z - 0.2);
-      this.vis.attach(card.material, 'loc');
-      const d = Math.hypot(c.x - this.tokenPos.x, c.z - this.tokenPos.z);
-      card.rise(0.25 + d * 0.06);
-      this.standees.push(card);
-      this.root.add(card);
-    }
+    this.buildLocations(r, phase);
     // 玩家令牌
     this.token = new PaperCard(makeCardGeometry({ width: 0.22, height: 0.32, uv: [0, 0, 1, 1] }),
       createPaperMaterial({ map: tokenTexture() }));
     this.token.rise(0.1);
     this.root.add(this.token);
     this.intro = 0;
+  }
+
+  /**
+   * 地点立牌组：房子开着时每个聚居格摆单栋房屋立牌 + 前景件；
+   * houses: false / low 档 / 房屋图集缺失时回退整张聚落立牌 + 前景件。
+   * 起立节奏（首次进入）：dist × 0.02（上限 0.8s），前景件 +0、房子 +0.08，格内按远近再错开 0–0.04。
+   */
+  private buildLocations(r: RegionData, phase: WarpPhase): void {
+    if (!this.vis) return;
+    const lv = this.levels;
+    const accept = this.maxLevelAbs > 0 && lv ? (x: number, z: number) => awayFromLevelEdge(lv, x, z, phase) : undefined;
+    const useHouses = this.params.houses && ui.quality.peek() !== 'low' && !!this.houseArt;
+    this.groups = planLocationGroups(r, phase, { houses: useHouses, accept });
+    const base = (x: number, z: number) => Math.min(0.8, Math.hypot(x - this.tokenPos.x, z - this.tokenPos.z) * 0.02);
+    const pos = new Vector3();
+    if (useHouses && this.houseArt && this.groups.some((g) => g.mode === 'houses')) {
+      const hb = this.houseBatch = new PaperBatch(this.houseArt, { cards: MAX_HOUSES_PER_CELL * r.locations.length + 8, frames: 12 });
+      this.vis.attach(hb.material, 'batch');
+      const known = new Set(this.houseArt.json.frames.map((f) => f.name));
+      for (const g of this.groups) for (const h of g.houses) {
+        if (!known.has(h.artKey)) continue;
+        const f = this.houseArt.json.frames.find((x) => x.name === h.artKey)!;
+        pos.set(h.wx, 0.001 + this.heightAt(h.wx, h.wz), h.wz);
+        const handle = hb.add({ frame: h.artKey, position: pos, scale: h.h / f.size[1], startState: HingeState.FLAT });
+        hb.rise(handle, base(h.wx, h.wz) + 0.08 + (h.z + 0.5) * 0.04);
+      }
+      this.root.add(hb.mesh);
+    }
+    // 前景件进地形批
+    const tb = this.terrainBatch;
+    const known = new Set(this.art?.json.frames.map((f) => f.name) ?? []);
+    for (const g of this.groups) for (const p of g.props) {
+      if (!tb || !known.has(p.artKey)) continue;
+      pos.set(p.wx, 0.001 + this.heightAt(p.wx, p.wz), p.wz);
+      tb.rise(tb.add({ frame: p.artKey, position: pos, startState: HingeState.FLAT }), base(p.wx, p.wz));
+    }
+    // 回退：整张聚落立牌（原版 16–51 号图）
+    for (const g of this.groups) {
+      if (g.mode !== 'standee') continue;
+      const loc = g.loc;
+      const card = this.makeStandee(loc);
+      const c = this.cellCenter(loc.cell);
+      card.position.set(c.x, 0.001 + this.heightAt(c.x, c.z - 0.2), c.z - 0.2);
+      this.vis.attach(card.material, 'loc');
+      const d = Math.hypot(c.x - this.tokenPos.x, c.z - this.tokenPos.z);
+      card.rise(0.08 + Math.min(0.8, d * 0.02));
+      this.standees.push(card);
+      this.root.add(card);
+    }
+  }
+
+  /** 地名标注挂点：房子时为最高一栋顶上 0.1；回退为整张立牌顶上 0.1。 */
+  locationLabelAt(cell: number, out = new Vector3()): Vector3 {
+    const g = this.groups.find((x) => x.loc.cell === cell);
+    if (g?.label) return out.set(g.label.x, this.heightAt(g.label.x, g.label.z) + g.label.top, g.label.z);
+    const c = this.cellCenter(cell);
+    const kind = g ? locationKind(g.loc.type) : 'village';
+    return out.set(c.x, this.heightAt(c.x, c.z - 0.2) + (LOCATION_SIZE[kind] ?? LOCATION_SIZE.village)[1] + 0.1, c.z - 0.2);
   }
 
   /** 三层布置：主体立牌（terrainBatch）+ 填充小件 / 地面散件（detailBatch）。 */
@@ -423,6 +492,7 @@ export class RegionScene implements IScene {
     this.ground?.dispose(); this.ground = null;
     this.terrainBatch?.dispose(); this.terrainBatch = null;
     this.detailBatch?.dispose(); this.detailBatch = null;
+    this.houseBatch?.dispose(); this.houseBatch = null; this.groups = [];
     this.fillerHandles = []; this.flatHandles = [];
     this.vis?.dispose(); this.vis = null;
     this.root.clear();

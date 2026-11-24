@@ -86,6 +86,11 @@ function painterFor(key: string): Painter {
     const roof = ({ city: '#7a3a2e', sectSeat: '#3e4f6e', town: '#6a5040', fort: '#4a4a3e', village: '#8a6a40' } as Record<string, string>)[p[1]] ?? '#5a4a5a';
     return house('#d8ccb0', roof);
   }
+  if (p[0] === 'house') {
+    const c = ({ cottage: ['#cdb48a', '#8a7448'], tile: ['#ece4d2', '#4a5560'], long: ['#c8b08a', '#7a6646'],
+      shop: ['#b89870', '#5a4a3a'], tower: ['#8a6a48', '#5a4630'], hall: ['#b0463a', '#3e4652'] } as Record<string, [string, string]>)[p[1]] ?? ['#d8ccb0', '#6a5a4a'];
+    return house(c[0], c[1]);
+  }
   if (p[0] === 'filler') {
     switch (p[1]) {
       case 'bush': return tree(p[2] === '1' ? '#6f9a50' : '#4f7a3c', '#4f7a3c');
