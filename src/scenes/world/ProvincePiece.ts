@@ -9,6 +9,8 @@ import { PieceSprings, type PieceState } from './pieceState';
 
 export const T_TOP = 0.012, T_CORE = 0.022;
 export const LAYER_PICK = 0, LAYER_DECOR = 1;
+/** 贴原版深色底图时的染色增益（线性空间），让强调色在墨色上看得出。 */
+export const TINT_GAIN = 1.25;
 
 /** 地图坐标（像素，y 向下）→ 平面坐标（世界单位，y 向上 = 世界 −z）。 */
 export interface MapXform { scale: number; ox: number; oy: number }
@@ -20,6 +22,8 @@ export interface PieceSource {
   texture: Texture | null;
   /** 纹理图片在平面坐标下的范围 [x0, yTop, w, h]。 */
   imageRect: [number, number, number, number];
+  /** 纹理由外部共享（整张底图），片释放时不销毁。 */
+  sharedTexture?: boolean;
 }
 
 /** 读图片 alpha → 轮廓（平面坐标）+ 归一化后的纸面纹理。 */
@@ -98,6 +102,7 @@ export class ProvincePiece extends Group {
   private accent: Lab;
   private local: PaperLocals;
   private shake = 0;
+  private sharedTexture = false;
   private dirty = true;
   /** 进场演出用：额外下沉。 */
   introOffset = 0;
@@ -107,6 +112,7 @@ export class ProvincePiece extends Group {
     this.outline = src.outline;
     const topOutline = insetPolygon(src.outline, gap) ?? src.outline;
     const coreOutline = insetPolygon(src.outline, gap * 0.35) ?? src.outline;
+    this.sharedTexture = !!src.sharedTexture;
     const mat = createPaperMaterial({ map: src.texture, cutout: false, doubleSided: false, vertexSide: true, fibre: 0.3, color: 0xffffff });
     this.local = mat.userData.paper as PaperLocals;
     this.top = new Mesh(buildSlab(topOutline, T_TOP, src.texture ? src.imageRect : undefined), mat);
@@ -153,7 +159,7 @@ export class ProvincePiece extends Group {
     }
     const s = this.springs;
     const [r, g, b] = pieceColor(this.base, this.accent, s.accent.x, s.dim.x, s.sat.x);
-    this.top.material.color.setRGB(r, g, b, SRGBColorSpace);
+    this.top.material.color.setRGB(r, g, b, SRGBColorSpace).multiplyScalar(this.sharedTexture ? TINT_GAIN : 1);
     this.local.uPaperFlash.value = Math.max(0, (s.rim.x - 1) * 0.18);
     let x = 0;
     if (this.shake > 0) { this.shake = Math.max(0, this.shake - dt / 0.3); x = Math.sin(this.shake * 40) * 0.01 * this.shake; }
@@ -168,6 +174,7 @@ export class ProvincePiece extends Group {
 
   dispose(): void {
     this.top.geometry.dispose(); this.core.geometry.dispose();
-    this.top.material.map?.dispose(); this.top.material.dispose();
+    if (!this.sharedTexture) this.top.material.map?.dispose();
+    this.top.material.dispose();
   }
 }

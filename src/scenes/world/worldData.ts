@@ -1,86 +1,79 @@
 import { signal } from '@preact/signals';
-import { chroma, lch, oklabToSrgb, rgbToHex, hexToOklab, mixLab } from './oklab';
+import { oklabToSrgb, rgbToHex, hexToOklab, mixLab } from './oklab';
 
 /**
  * 省域静态数据 + 视图模型（工单 M3-WO2 §2.1）。
- * 内容包接入前的占位：原版 worldmap_overlays/MapPlaceN.png 作为省片的轮廓与纸面纹理，
- * 位置由 tools/map/solve_layout.py 按边缘拼合求出（原版没有导出摆位表），`center` 单位 = 原图像素，y 向下。
- * 接入真实 provinces.json / map-layout.json 后替换 PLACE_LAYOUT 即可，场景代码不改。
+ * 原版资源（assets/world-map/world_map/）：底图 base/MiniMapBack.png（1820×1600），
+ * 省片轮廓取 places/MapPlaceN.png 的 alpha，摆位与高亮色取 layout.json → prefabs.ui_PartWorldMap.place_highlights
+ * （rect_px，左上原点、y 向下）。省片表面贴的是底图的对应区域，抬起时带着原画一起走。
  */
 export interface PlaceDef {
   id: string;
   nameKey: string;
-  image: string;              // 纹理 URL（灰度纸面，乘以省色）
-  center: [number, number];   // 图片中心在地图坐标（像素）中的位置
+  image: string;              // 轮廓掩码 URL（MapPlaceN.png）
+  center: [number, number];   // 掩码图中心在底图像素坐标中的位置
   layerHeight: number;        // 0–3
-  accentColor: string;
+  accentColor: string;        // 原版高亮色
   faction: string;
 }
 
 export interface MapLayoutLite {
-  size: [number, number];     // 地图坐标范围（像素）
+  size: [number, number];     // 底图像素尺寸
+  baseImage: string;
   backdrop: string;
   clouds: { image: string; at: [number, number]; scale: number; parallax: number }[];
   palette: { faction: Record<string, string>; goodwillRamp: [string, string]; idle: string; lockedTint: string };
 }
 
-const OVERLAY = '/assets/map_terrain/map_terrain/worldmap_overlays/';
+const WM = '/assets/world-map/world_map/';
+const CLOUD = '/assets/map_terrain/map_terrain/worldmap_overlays/';
 
-/** [MapPlace 编号, 中心 x, 中心 y, 档高, 势力]。编号 i 对应原版地名表 id i+1。 */
-const RAW: Array<[number, number, number, number, string]> = [
-  [10, 308, 892, 1, 'west'],    // 秦州
-  [9, 1742, 162, 2, 'north'],   // 辽阳
-  [4, 890, 394, 2, 'north'],   // 太原
-  [0, 1314, 414, 3, 'north'],   // 京城
-  [6, 1634, 402, 1, 'east'],    // 青州
-  [3, 1024, 766, 2, 'center'],  // 襄阳
-  [12, 1438, 858, 1, 'center'], // 寿春
-  [14, 1656, 692, 0, 'east'],   // 扬州
-  [1, 728, 996, 1, 'west'],    // 成都
-  [7, 1198, 1092, 3, 'center'], // 江陵
-  [13, 1734, 940, 2, 'east'],  // 杭州
-  [11, 862, 1628, 2, 'south'],  // 大理
-  [2, 1000, 1358, 0, 'south'],  // 桂州
-  [5, 1394, 1346, 1, 'south'],  // 广州
-  [8, 1474, 1622, 3, 'east'],   // 福州
+/** [MapPlace 编号, 中心 x, 中心 y, 档高, 势力, 原版高亮色]——由 layout.json 的 place_highlights 生成。 */
+const RAW: Array<[number, number, number, number, string, string]> = [
+  [0, 1051.4, 432.3, 3, 'north', '#edb723'],  // 京畿
+  [1, 466.9, 1052.5, 1, 'west', '#f798d3'],  // 巴蜀
+  [2, 748.5, 1424.0, 0, 'south', '#4bffb5'],  // 广南
+  [3, 755.4, 795.0, 2, 'center', '#ffffff'],  // 荆北
+  [4, 620.4, 415.4, 2, 'north', '#ffd4a9'],  // 山西
+  [5, 1156.7, 1405.6, 1, 'south', '#ff7e09'],  // 广东
+  [6, 1374.9, 404.8, 1, 'east', '#bbe3ff'],  // 山东
+  [7, 940.1, 1137.6, 3, 'center', '#69a8ff'],  // 荆南
+  [8, 1358.0, 1194.9, 2, 'east', '#ffeb54'],  // 福建
+  [9, 1493.4, 163.3, 1, 'north', '#c7ff90'],  // 辽东
+  [10, 307.0, 704.4, 0, 'west', '#dd8826'],  // 西域
+  [11, 300.5, 1327.8, 2, 'south', '#ce5cff'],  // 云南
+  [12, 1184.4, 890.0, 1, 'center', '#36ffff'],  // 淮南
+  [13, 1486.6, 974.6, 0, 'east', '#ff5724'],  // 江南
+  [14, 1408.5, 708.1, 2, 'east', '#ff4040'],  // 江北
 ];
 
-/** 色相环均匀取强调色：从 L=0.62 向两侧找最近的能在 sRGB 内保持 C ≥ 0.13 的明度（§5）。 */
-function accentFor(h: number): string {
-  for (let k = 0; k < 30; k++) {
-    const L = 0.62 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.02;
-    const hex = rgbToHex(oklabToSrgb(lch(L, 0.14, h)));
-    const lab = hexToOklab(hex);
-    if (chroma(lab) >= 0.13 && Math.abs(lab[0] - 0.76) >= 0.1) return hex;   // 与底色（L≈0.76）拉开 ΔL
-  }
-  return rgbToHex(oklabToSrgb(lch(0.5, 0.14, h)));
-}
-
-export const PLACES: PlaceDef[] = RAW.map(([n, x0, y0, layer, faction], i) => ({
+export const PLACES: PlaceDef[] = RAW.map(([n, x, y, layer, faction, accent]) => ({
   id: `p${n}`,
   nameKey: `province.${n}`,
-  image: `${OVERLAY}MapPlace${n}.png`,
-  center: [x0, y0],
+  image: `${WM}places/MapPlace${n}.png`,
+  center: [x, y],
   layerHeight: layer,
-  accentColor: accentFor((i / RAW.length) * Math.PI * 2 + 0.4),
+  accentColor: accent,
   faction,
 }));
 
 export const MAP_LAYOUT: MapLayoutLite = {
-  size: [2100, 1900],
-  backdrop: '#d9c9a6',
+  size: [1820, 1600],
+  baseImage: `${WM}base/MiniMapBack.png`,
+  backdrop: '#2b2722',
   clouds: [
-    { image: `${OVERLAY}MapCloud_0.png`, at: [600, 300], scale: 1.2, parallax: 0.2 },
-    { image: `${OVERLAY}MapCloud_1.png`, at: [1500, 1100], scale: 1.0, parallax: 0.25 },
-    { image: `${OVERLAY}MapCloud_2.png`, at: [900, 1500], scale: 1.1, parallax: 0.18 },
-    { image: `${OVERLAY}MapCloud_3.png`, at: [2000, 650], scale: 1.0, parallax: 0.3 },
-    { image: `${OVERLAY}MapCloud_1.png`, at: [300, 1200], scale: 0.9, parallax: 0.22 },
+    { image: `${CLOUD}MapCloud_0.png`, at: [500, 260], scale: 1.2, parallax: 0.2 },
+    { image: `${CLOUD}MapCloud_1.png`, at: [1300, 950], scale: 1.0, parallax: 0.25 },
+    { image: `${CLOUD}MapCloud_2.png`, at: [760, 1350], scale: 1.1, parallax: 0.18 },
+    { image: `${CLOUD}MapCloud_3.png`, at: [1650, 520], scale: 1.0, parallax: 0.3 },
+    { image: `${CLOUD}MapCloud_1.png`, at: [240, 1050], scale: 0.9, parallax: 0.22 },
   ],
   palette: {
-    faction: { west: '#b9b29c', north: '#b8b6ab', east: '#b2b9a8', center: '#bfb4a0', south: '#b6ae9e' },
-    goodwillRamp: ['#a9a49a', '#c9bc95'],
-    idle: '#bab3a2',
-    lockedTint: '#8f8a80',
+    // 底图是深色水墨：底色是乘到原画上的淡色，接近白，保留原画
+    faction: { west: '#f2ead8', north: '#e9eaf0', east: '#e6efe6', center: '#f3e8de', south: '#efe9e0' },
+    goodwillRamp: ['#d8d6d2', '#f6eccb'],
+    idle: '#eeeae2',
+    lockedTint: '#9d9890',
   },
 };
 

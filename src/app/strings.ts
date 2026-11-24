@@ -11,8 +11,8 @@ const zh: Record<string, string> = {
   'field.age': '年龄', 'field.attrs': '属性分配', 'attr.str': '膂力', 'attr.agi': '灵敏', 'attr.int': '悟性', 'attr.con': '体质',
   'field.difficulty': '难度', 'diff.easy': '简单', 'diff.normal': '普通', 'diff.hard': '困难',
   'field.worldSize': '世界大小', 'size.small': '小', 'size.medium': '中', 'size.large': '大',
-  // 大地图（M3-WO2）：省名占位取原版地名表 id 1–15，对应 MapPlace0–14
-  'province.0': '京城', 'province.1': '成都', 'province.2': '桂州', 'province.3': '襄阳', 'province.4': '太原', 'province.5': '广州', 'province.6': '青州', 'province.7': '江陵', 'province.8': '福州', 'province.9': '辽阳', 'province.10': '秦州', 'province.11': '大理', 'province.12': '寿春', 'province.13': '杭州', 'province.14': '扬州',
+  // 大地图（M3-WO2）：省名取原版 AllWorldMap_Date，序号 = MapPlace 编号
+  'province.0': '京畿', 'province.1': '巴蜀', 'province.2': '广南', 'province.3': '荆北', 'province.4': '山西', 'province.5': '广东', 'province.6': '山东', 'province.7': '荆南', 'province.8': '福建', 'province.9': '辽东', 'province.10': '西域', 'province.11': '云南', 'province.12': '淮南', 'province.13': '江南', 'province.14': '江北',
   'region.capital': '州府', 'region.sect': '门派', 'region.rural': '乡野',
   'map.ap': '行动力', 'map.go': '前往', 'map.goodwill': '恩义', 'map.unreached': '未通', 'map.apShort': '行动力不足',
   'map.home': '所在', 'map.back': '返回大地图', 'map.locked.reason': '此地尚未开放',

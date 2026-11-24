@@ -75,6 +75,7 @@ export class WorldMapScene implements IScene {
   private routeData = stubRoutes();
   /** 每片的世界 box（缓存给 focus rect 用）。 */
   private tmpBox = new Box3();
+  private baseTex: Texture | null = null;
   private labelPos = new Map<string, Vector3>();
   private labelKey = new Map<string, string>();
 
@@ -91,7 +92,7 @@ export class WorldMapScene implements IScene {
   }
 
   async preload(_assets: AssetCache, _signal: AbortSignal): Promise<void> {
-    const urls = [...PLACES.map((p) => p.image), ...MAP_LAYOUT.clouds.map((c) => c.image)];
+    const urls = [MAP_LAYOUT.baseImage, ...PLACES.map((p) => p.image), ...MAP_LAYOUT.clouds.map((c) => c.image)];
     const imgs = await Promise.all(urls.map(loadImage));
     urls.forEach((u, i) => this.images.set(u, imgs[i]));
     this.build();
@@ -101,8 +102,8 @@ export class WorldMapScene implements IScene {
     if (this.built) return;
     this.built = true;
     const s = this.scene;
-    s.background = new Color('#cdbd9a');
-    s.fog = new Fog('#cdbd9a', 70, 140);
+    s.background = new Color(MAP_LAYOUT.backdrop);
+    s.fog = new Fog(MAP_LAYOUT.backdrop, 70, 140);
     s.add(new HemisphereLight(0xfff6e6, 0x75644c, 1.1), new AmbientLight(0xffffff, 0.15));
     this.key = new DirectionalLight(0xfff0d8, 2.3);
     this.key.position.set(-7 * 2.2, 6.5 * 2.2, -5 * 2.2);
@@ -116,12 +117,25 @@ export class WorldMapScene implements IScene {
       this.key.shadow.bias = -0.0004; this.key.shadow.normalBias = 0.01;
     }
 
-    // 底纸
+    // 底纸：外圈一张深色大纸 + 原版底图整张平铺（省片之间的纸缝里露出的也是原画）
     const [W, H] = MAP_LAYOUT.size;
-    const back = new Mesh(new PlaneGeometry(W * this.xf.scale * 1.5, H * this.xf.scale * 1.5).rotateX(-Math.PI / 2),
+    const mw = W * this.xf.scale, mh = H * this.xf.scale;
+    const back = new Mesh(new PlaneGeometry(mw * 1.6, mh * 1.6).rotateX(-Math.PI / 2),
       createPaperMaterial({ color: MAP_LAYOUT.backdrop, cutout: false, doubleSided: false, fibre: 0.35 }));
-    back.position.y = -0.01; back.receiveShadow = true; back.name = 'backdrop';
+    back.position.y = -0.02; back.receiveShadow = true; back.name = 'backdrop';
     s.add(back);
+    const baseImg = this.images.get(MAP_LAYOUT.baseImage);
+    let baseTex: Texture | null = null;
+    if (baseImg) {
+      baseTex = new CanvasTexture(baseImg as unknown as HTMLCanvasElement);
+      baseTex.colorSpace = SRGBColorSpace; baseTex.anisotropy = 8;
+      const sheet = new Mesh(new PlaneGeometry(mw, mh).rotateX(-Math.PI / 2),
+        createPaperMaterial({ map: baseTex, cutout: false, doubleSided: false, fibre: 0.2, color: 0xffffff }));
+      sheet.position.y = -0.01; sheet.receiveShadow = true; sheet.name = 'baseSheet'; sheet.layers.set(LAYER_DECOR);
+      s.add(sheet);
+      this.baseTex = baseTex;
+    }
+    const [bx0, byTop] = mapToPlane(this.xf, 0, 0);
 
     const gap = MAP_WIDTH * 0.0018;
     const view = this.view.peek();
@@ -129,6 +143,7 @@ export class WorldMapScene implements IScene {
       const img = this.images.get(p.image);
       if (!img) continue;
       const src = pieceFromImage(img, p.center, this.xf);
+      if (baseTex) { src.texture?.dispose(); src.texture = baseTex; src.imageRect = [bx0, byTop, mw, mh]; src.sharedTexture = true; }
       const pv = view.provinces.find((v) => v.id === p.id)!;
       const piece = new ProvincePiece(p.id, src, gap, p.layerHeight, pv.baseColor, pv.accentColor);
       s.add(piece);
@@ -576,6 +591,7 @@ export class WorldMapScene implements IScene {
 
   dispose(): void {
     for (const p of this.pieces) p.dispose();
+    this.baseTex?.dispose(); this.baseTex = null;
     this.routes?.dispose(); this.token?.dispose();
     for (const c of this.clouds) { c.mesh.geometry.dispose(); (c.mesh.material as MeshLambertMaterial).map?.dispose(); (c.mesh.material as MeshLambertMaterial).dispose(); }
     this.scene.clear(); this.pieces = []; this.byId.clear(); this.clouds = []; this.built = false;
