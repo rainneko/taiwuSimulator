@@ -6,6 +6,7 @@ import { MenuScene } from '../scenes/MenuScene';
 import { RegionScene } from '../scenes/region';
 import { WorldMapScene } from '../scenes/world/WorldMapScene';
 import { gameDB, STUB_BUNDLE } from '../data';
+import { SaveManager } from './SaveManager';
 import { AssetCache } from './AssetCache';
 import { InputRouter } from './InputRouter';
 import { LabelProjector } from './LabelProjector';
@@ -50,7 +51,8 @@ async function boot(): Promise<void> {
   const labels = new LabelProjector(el('labels'));
   const input = new InputRouter(canvas, scenes);
   gameDB.loadFromBundle(STUB_BUNDLE);
-  Object.assign(services, { scenes, portraits, labels, input, assets, manifest: { name: '占位内容包', version: '0.0.0' }, db: gameDB, player: null, world: null, clock: null, turns: null });
+  const saveManager = new SaveManager();
+  Object.assign(services, { scenes, portraits, labels, input, assets, manifest: { name: '占位内容包', version: '0.0.0' }, db: gameDB, player: null, world: null, clock: null, turns: null, saveManager });
   void assets.loadJson<{ name: string; version: string }>(`${import.meta.env.BASE_URL}content/manifest.json`).then((m) => { if (m?.name) services.manifest = m; });
 
   const applySize = () => {

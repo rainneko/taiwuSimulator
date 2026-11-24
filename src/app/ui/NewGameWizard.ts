@@ -57,6 +57,7 @@ function dispatchStartNewGame(params: NewGameParams): void {
   const clock = new WorldClock(world);
   const turns = new TurnManager(clock);
   Object.assign(services, { player, world, clock, turns });
+  services.saveManager?.installAutoSave();
   console.info('[NewGame]', player.name, world.time);
 }
 

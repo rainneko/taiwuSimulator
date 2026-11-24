@@ -70,3 +70,50 @@ export function titleTexture(text: string): Texture {
   const tex = new CanvasTexture(c); tex.colorSpace = SRGBColorSpace;
   return tex;
 }
+
+/** 程序化开场标题：宣纸底 + 水墨渲染「太吾绘卷」四字，返回 4 张独立的单字贴图。 */
+export function splashCharTextures(text = '太吾绘卷'): Texture[] {
+  const chars = [...text];
+  return chars.map((ch) => {
+    const size = 512;
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const g = c.getContext('2d')!;
+    // 宣纸底
+    g.fillStyle = '#f8f2e4';
+    g.fillRect(0, 0, size, size);
+    // 纸纹噪点
+    for (let i = 0; i < 800; i++) {
+      const x = Math.random() * size, y = Math.random() * size;
+      g.fillStyle = `rgba(180,160,130,${Math.random() * 0.08})`;
+      g.fillRect(x, y, Math.random() * 3 + 1, Math.random() * 3 + 1);
+    }
+    // 水墨晕染背景（极淡的圆形渐变）
+    const wash = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.45);
+    wash.addColorStop(0, 'rgba(60,50,40,0.03)');
+    wash.addColorStop(0.7, 'rgba(60,50,40,0.01)');
+    wash.addColorStop(1, 'rgba(60,50,40,0)');
+    g.fillStyle = wash;
+    g.fillRect(0, 0, size, size);
+    // 主字
+    g.fillStyle = '#1a1208';
+    g.font = `900 ${size * 0.7}px "STKaiti","KaiTi","Songti SC","Noto Serif SC",serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(ch, size / 2, size / 2 + size * 0.02);
+    const tex = new CanvasTexture(c);
+    tex.colorSpace = SRGBColorSpace;
+    return tex;
+  });
+}
+
+/** 程序化副标题贴图：「经典版 · 重制」。 */
+export function splashSubtitleTexture(): Texture {
+  const w = 512, h = 96;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#8a6b4a';
+  g.font = '300 36px "Songti SC","Noto Serif SC","STSong",serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('经典版 · 重制', w / 2, h / 2);
+  const tex = new CanvasTexture(c); tex.colorSpace = SRGBColorSpace;
+  return tex;
+}

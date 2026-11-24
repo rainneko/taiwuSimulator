@@ -7,6 +7,7 @@ import type { Character } from '../core/character';
 import type { GameDB } from '../data';
 import type { WorldData } from '../core/world';
 import type { WorldClock, TurnManager } from '../core/world';
+import type { SaveManager } from './SaveManager';
 
 /** 启动时填充的单例服务（组件通过它拿 SceneManager 等）。 */
 export const services = {} as {
@@ -17,4 +18,5 @@ export const services = {} as {
   world: WorldData | null;
   clock: WorldClock | null;
   turns: TurnManager | null;
+  saveManager: SaveManager;
 };

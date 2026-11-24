@@ -10,7 +10,7 @@ import type { ScenePointerEvent } from '../app/InputRouter';
 import type { IScene } from '../app/SceneManager';
 import { ui, type Screen } from '../app/store';
 import { t } from '../app/strings';
-import { inkRidgeTexture, loadMenuTexture, titleTexture } from './menuArt';
+import { inkRidgeTexture, loadMenuTexture, splashCharTextures, splashSubtitleTexture, titleTexture } from './menuArt';
 import { ParallaxRig } from './ParallaxRig';
 
 // ---------------------------------------------------------------------------
@@ -102,6 +102,8 @@ export class MenuScene implements IScene {
   private splashGroup = new Group();
   private splashLogoMesh: Mesh | null = null;
   private splashTitleMesh: Mesh | null = null;
+  private splashCharMeshes: Mesh[] = [];
+  private splashSubMesh: Mesh | null = null;
   private splashTime = 0;
 
   // Menu phase — scroll strips
@@ -377,39 +379,59 @@ export class MenuScene implements IScene {
     this.disposables.push(this.titleCard.geometry, mat);
   }
 
-  /** Build splash overlay (logo + title on black). */
+  /** Build splash overlay (logo + title on black, or procedural calligraphy). */
   private buildSplash(s: Scene): void {
     const logoTex = this.loadedTex.get('logo');
     const titleTex = this.loadedTex.get('gameTitle');
 
-    if (!logoTex && !titleTex) {
-      // No splash assets; skip splash phase
-      this.phase = 'menu';
-      return;
-    }
-
     this.splashGroup.renderOrder = 100;
     s.add(this.splashGroup);
 
-    if (logoTex) {
-      const mat = new MeshBasicMaterial({ map: logoTex, transparent: true, opacity: 0, depthTest: false });
-      this.splashLogoMesh = makePlane(2.5, 2.5, mat);
-      this.splashLogoMesh.renderOrder = 101;
-      this.splashLogoMesh.position.set(0, 2.2, 12.5); // close to camera
-      this.splashGroup.add(this.splashLogoMesh);
-      this.disposables.push(this.splashLogoMesh.geometry, mat);
-    }
-
-    if (titleTex) {
-      const aspect = 3348 / 1458;
-      const h = 1.4;
-      const w = h * aspect;
-      const mat = new MeshBasicMaterial({ map: titleTex, transparent: true, opacity: 0, depthTest: false });
-      this.splashTitleMesh = makePlane(w, h, mat);
-      this.splashTitleMesh.renderOrder = 102;
-      this.splashTitleMesh.position.set(0, 2.2, 12.4);
-      this.splashGroup.add(this.splashTitleMesh);
-      this.disposables.push(this.splashTitleMesh.geometry, mat);
+    if (logoTex || titleTex) {
+      // Original asset splash
+      if (logoTex) {
+        const mat = new MeshBasicMaterial({ map: logoTex, transparent: true, opacity: 0, depthTest: false });
+        this.splashLogoMesh = makePlane(2.5, 2.5, mat);
+        this.splashLogoMesh.renderOrder = 101;
+        this.splashLogoMesh.position.set(0, 2.2, 12.5);
+        this.splashGroup.add(this.splashLogoMesh);
+        this.disposables.push(this.splashLogoMesh.geometry, mat);
+      }
+      if (titleTex) {
+        const aspect = 3348 / 1458;
+        const h = 1.4;
+        const w = h * aspect;
+        const mat = new MeshBasicMaterial({ map: titleTex, transparent: true, opacity: 0, depthTest: false });
+        this.splashTitleMesh = makePlane(w, h, mat);
+        this.splashTitleMesh.renderOrder = 102;
+        this.splashTitleMesh.position.set(0, 2.2, 12.4);
+        this.splashGroup.add(this.splashTitleMesh);
+        this.disposables.push(this.splashTitleMesh.geometry, mat);
+      }
+    } else {
+      // Procedural calligraphy splash: 四字逐字淡入
+      const charTexes = splashCharTextures('太吾绘卷');
+      const charSize = 1.2;
+      const gap = 0.15;
+      const totalW = charSize * 4 + gap * 3;
+      const startX = -totalW / 2 + charSize / 2;
+      this.splashCharMeshes = charTexes.map((tex, i) => {
+        const mat = new MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthTest: false, fog: false });
+        const mesh = makePlane(charSize, charSize, mat);
+        mesh.renderOrder = 101 + i;
+        mesh.position.set(startX + i * (charSize + gap), 0.3, 0);
+        this.splashGroup.add(mesh);
+        this.disposables.push(mesh.geometry, mat, tex);
+        return mesh;
+      });
+      // 副标题
+      const subTex = splashSubtitleTexture();
+      const subMat = new MeshBasicMaterial({ map: subTex, transparent: true, opacity: 0, depthTest: false, fog: false });
+      this.splashSubMesh = makePlane(2.4, 0.45, subMat);
+      this.splashSubMesh.renderOrder = 105;
+      this.splashSubMesh.position.set(0, -0.7, 0);
+      this.splashGroup.add(this.splashSubMesh);
+      this.disposables.push(this.splashSubMesh.geometry, subMat, subTex);
     }
   }
 
@@ -424,7 +446,16 @@ export class MenuScene implements IScene {
     this.introDone = false;
     this.time = 0;
     this.splashTime = 0;
-    this.phase = (this.splashLogoMesh || this.splashTitleMesh) ? 'splash' : 'menu';
+    this.phase = (this.splashLogoMesh || this.splashTitleMesh || this.splashCharMeshes.length > 0) ? 'splash' : 'menu';
+
+    // 开场期间隐藏菜单背景元素
+    if (this.phase === 'splash') {
+      for (const c of this.fallbackCards) c.visible = false;
+      for (const s of this.strips) s.group.visible = false;
+      if (this.edgeTop) this.edgeTop.visible = false;
+      if (this.edgeBottom) this.edgeBottom.visible = false;
+      if (this.titleCard) this.titleCard.visible = false;
+    }
 
     const reduced = ui.reducedMotion.peek();
 
@@ -515,12 +546,23 @@ export class MenuScene implements IScene {
     // -- Splash phase --
     if (this.phase === 'splash') {
       this.splashTime += dt;
+      this.camera.position.set(0, 0, 10);
+      this.camera.lookAt(0, 0, 0);
+      this.scene.background = new Color(0x1a1510);
       this.updateSplash();
-      return; // Don't update menu during splash
+      return;
     }
 
-    // Hide splash if still visible
-    if (this.splashGroup.visible) this.splashGroup.visible = false;
+    // Transition out of splash
+    if (this.splashGroup.visible) {
+      this.splashGroup.visible = false;
+      if (!this.hasOriginalAssets) this.scene.background = new Color(0xe8dcc2);
+      for (const c of this.fallbackCards) c.visible = true;
+      for (const s of this.strips) s.group.visible = true;
+      if (this.edgeTop) this.edgeTop.visible = true;
+      if (this.edgeBottom) this.edgeBottom.visible = true;
+      if (this.titleCard) this.titleCard.visible = true;
+    }
 
     let moving = false;
 
@@ -582,21 +624,43 @@ export class MenuScene implements IScene {
   private updateSplash(): void {
     const t = this.splashTime;
 
-    // Logo: fade in 0→1 over first second, hold, then fade out
+    if (this.splashCharMeshes.length > 0) {
+      // Procedural: 逐字淡入，每字 0.6s 间隔，各字 0.8s 淡入
+      const CHAR_DELAY = 0.6;
+      const CHAR_FADE = 0.8;
+      for (let i = 0; i < this.splashCharMeshes.length; i++) {
+        const mat = this.splashCharMeshes[i].material as MeshBasicMaterial;
+        const start = 0.3 + i * CHAR_DELAY;
+        if (t < start) mat.opacity = 0;
+        else mat.opacity = Math.min(1, (t - start) / CHAR_FADE);
+      }
+      // 副标题：最后一字开始淡入后 0.5s 开始
+      if (this.splashSubMesh) {
+        const subStart = 0.3 + (this.splashCharMeshes.length - 1) * CHAR_DELAY + 0.5;
+        const mat = this.splashSubMesh.material as MeshBasicMaterial;
+        if (t < subStart) mat.opacity = 0;
+        else mat.opacity = Math.min(0.7, (t - subStart) / 0.6 * 0.7);
+      }
+      // 全部展示完毕后 1.2s 过渡到菜单
+      const allDone = 0.3 + (this.splashCharMeshes.length - 1) * CHAR_DELAY + CHAR_FADE;
+      if (t >= allDone + 1.2) this.phase = 'menu';
+      return;
+    }
+
+    // Original asset splash: logo → title
     if (this.splashLogoMesh) {
       const mat = this.splashLogoMesh.material as MeshBasicMaterial;
       if (t < 1.0) {
-        mat.opacity = t; // fade in
+        mat.opacity = t;
       } else if (t < SPLASH_LOGO_DUR - 0.5) {
-        mat.opacity = 1; // hold
+        mat.opacity = 1;
       } else if (t < SPLASH_LOGO_DUR) {
-        mat.opacity = 1 - (t - (SPLASH_LOGO_DUR - 0.5)) * 2; // fade out
+        mat.opacity = 1 - (t - (SPLASH_LOGO_DUR - 0.5)) * 2;
       } else {
         mat.opacity = 0;
       }
     }
 
-    // Title: fade in after logo
     if (this.splashTitleMesh) {
       const mat = this.splashTitleMesh.material as MeshBasicMaterial;
       const tStart = SPLASH_LOGO_DUR;
@@ -609,7 +673,6 @@ export class MenuScene implements IScene {
       }
     }
 
-    // After splash completes, transition to menu
     const totalSplash = SPLASH_LOGO_DUR + SPLASH_TITLE_DUR + 0.5;
     if (t >= totalSplash) {
       this.phase = 'menu';
@@ -727,6 +790,8 @@ export class MenuScene implements IScene {
     this.titleCard = null;
     this.splashLogoMesh = null;
     this.splashTitleMesh = null;
+    this.splashCharMeshes = [];
+    this.splashSubMesh = null;
     this.loadedTex.clear();
     this.rig.clear();
     this.scene.clear();

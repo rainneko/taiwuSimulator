@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { popModal, ui, type ModalId, type Quality } from '../store';
 import { t } from '../strings';
 import { PaperButton } from './PaperButton';
+import { SaveLoadModal } from './SaveLoadModal';
 
 const Settings: FunctionComponent = () => {
   const q = ui.quality.value;
@@ -17,7 +18,7 @@ const Settings: FunctionComponent = () => {
 }
 
 const SaveLoad: FunctionComponent = () => {
-  return h('div', { class: 'placeholder' }, t('saveLoad.empty'));
+  return h(SaveLoadModal, null) as any;
 }
 
 const Credits: FunctionComponent = () => {

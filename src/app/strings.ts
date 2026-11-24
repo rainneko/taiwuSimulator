@@ -5,6 +5,8 @@ const zh: Record<string, string> = {
   'settings.title': '设置', 'settings.quality': '画质', 'settings.motion': '减少动效', 'settings.volume': '音量',
   'quality.high': '高', 'quality.medium': '中', 'quality.low': '低',
   'saveLoad.title': '存档', 'saveLoad.empty': '暂无存档', 'credits.title': '鸣谢',
+  'save.slot': '存档', 'save.slotAuto': '自动存档', 'save.empty': '空',
+  'save.save': '保存', 'save.load': '读取', 'save.delete': '删除',
   'wizard.step.char': '人物', 'wizard.step.birth': '出生地', 'wizard.step.world': '世界设定',
   'wizard.birth.placeholder': '世界地图选点（待 WO2 接入）',
   'field.surname': '姓', 'field.given': '名', 'field.gender': '性别', 'gender.m': '男', 'gender.f': '女',

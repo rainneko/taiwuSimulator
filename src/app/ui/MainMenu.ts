@@ -10,9 +10,11 @@ export const muted = signal(false);
 
 interface MenuItem { id: string; labelKey: string; visible?: () => boolean; onSelect: () => void }
 
-/** 存档工单接入前的桩。 */
-function hasAnySave(): boolean { try { return !!localStorage.getItem('taiwu.save.latest'); } catch { return false; } }
-function continueLatest(): void { console.info('[stub] continueLatest'); }
+function hasAnySave(): boolean { return services.saveManager?.hasLatest() ?? false; }
+function continueLatest(): void {
+  if (!services.saveManager?.loadLatest()) return;
+  void services.scenes.goto('worldMap');
+}
 
 const items: MenuItem[] = [
   { id: 'continue', labelKey: 'menu.continue', visible: hasAnySave, onSelect: continueLatest },
