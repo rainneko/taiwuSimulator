@@ -264,6 +264,15 @@ class HouseTest(unittest.TestCase):
                 filled += len(got) >= lo
         self.assertGreater(filled, 0.6 * 200 * len(pg.HOUSE_RECIPES))
 
+    def test_first_house_blocked_still_places_others(self):
+        """道路从门派驻地格的后边出去、殿阁放不下时，照常摆其余房屋，不会一栋都没有（第二批报告 2026-11-24）。"""
+        road = [(0.5, 0.5 - s) for s in np.linspace(0, 0.5, 11)]
+        for seed in range(1, 41):
+            got = pg.place_houses(0, 0, "sectSeat", seed, self.types, road)
+            self.assertGreaterEqual(len(got), 2, seed)
+            for h in got:
+                self.assertFalse(any(pg._point_in_poly(p, pg.house_corners(h), pg.ROAD_W / 2 + 0.02) for p in road))
+
     def test_size_matches_asset(self):
         asp = {k: (h, a) for v in self.types.values() for k, h, a in v}
         for seed in range(1, 6):

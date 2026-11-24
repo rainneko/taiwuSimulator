@@ -361,5 +361,48 @@ class RidgeTest(unittest.TestCase):
             self.assertEqual(len(plan.peaks), ncomp)
 
 
+class QinglvGradeTest(unittest.TestCase):
+    """青绿 A/B 的载入时调色与赭色岩层侧壁（--grade qinglv / --cliff-walls）。"""
+
+    @staticmethod
+    def hsv(c):
+        import colorsys
+        return colorsys.rgb_to_hsv(*[float(v) for v in c])
+
+    def test_warm_desaturated_alpha_kept(self):
+        a = np.array([[[0.85, 0.55, 0.25, 0.7]]], np.float32)       # 橙
+        g = pg.grade_qinglv(a)
+        self.assertEqual(g.shape, a.shape)
+        self.assertAlmostEqual(float(g[0, 0, 3]), 0.7, places=6)
+        self.assertLess(self.hsv(g[0, 0, :3])[1], self.hsv(a[0, 0, :3])[1] * 0.7)
+
+    def test_green_pushed_towards_cyan(self):
+        a = np.array([[[0.45, 0.65, 0.30]]], np.float32)             # 草绿
+        h0, h1 = self.hsv(a[0, 0])[0] * 360, self.hsv(pg.grade_qinglv(a)[0, 0])[0] * 360
+        self.assertGreater(h1, h0 + 10)
+
+    def test_grey_almost_unchanged(self):
+        a = np.full((1, 1, 3), 0.6, np.float32)
+        self.assertLess(float(np.abs(pg.grade_qinglv(a) - a).max()), 0.03)
+
+    def test_apply_grade_skip(self):
+        A = pg.Assets()
+        A.standee = {"x": np.full((2, 2, 4), 0.5, np.float32) * [1.6, 1.0, 0.5, 2.0]}
+        A.standee["y"] = A.standee["x"].copy()
+        A.ground = {"plain": np.full((2, 2, 3), [0.5, 0.7, 0.3], np.float32)}
+        before = {k: v.copy() for k, v in A.standee.items()}
+        pg.apply_grade(A, ("y", "terrain.ground.plain"))
+        self.assertFalse(np.array_equal(A.standee["x"], before["x"]))
+        self.assertTrue(np.array_equal(A.standee["y"], before["y"]))
+        self.assertTrue(np.allclose(A.ground["plain"], [0.5, 0.7, 0.3]))
+
+    def test_cliff_colour(self):
+        hy = np.array([0.0, 0.02, 0.0495])
+        c = pg.cliff_colour(hy, np.full(3, 0.05))
+        self.assertTrue(np.allclose(c[2], pg.RIM_COLOR))            # 顶沿一线纸芯白
+        self.assertFalse(np.allclose(c[0], c[1]))                    # 岩层条纹深浅交替
+        self.assertTrue(all(cc[0] > cc[2] for cc in c[:2]))         # 赭色：红 > 蓝
+
+
 if __name__ == "__main__":
     unittest.main()

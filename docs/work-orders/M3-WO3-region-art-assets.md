@@ -739,6 +739,7 @@ export function placeTerrainStandees(
    - `fresh` 为空（k 的款都用过了，只能重复）：`pool` = k 的全部款，从 `h32(…305…) % len(pool)` 那款起依次试每一款；都不行，再按配方候选的**去重后顺序**试其他种类里还没用过的第一款（只在这一处原本放不下时才用，放得下时结果不变）。
    - 重复用同一张图时，两栋相同的**不能相邻**：本格已放的各栋加上这一栋，按 (x, z) 升序（屏幕从左到右）排开，这一栋的左右邻居都不能是同一个 artKey。
    - 每个候选都走约束 1–5 的同一套检查（`_house_fits`），第一个通过的放下，本次尝试结束。参考实现：`preview_grid._place_once` / `_house_fits` / `_same_key_adjacent`；测试 `test_v13.HouseTest.test_no_repeat_while_variants_left`、`test_forced_repeat_not_adjacent`（每种只给一款图时 200 个种子无相邻重复）。一格扣掉扭曲内缩（至多 0.16）、空地与扇形后放不下更多；要更密就让镇、城占两格。
+8. **第一栋放不下时不空格（2026-11-24，第二批报告）**：寨的瞭望楼、门派驻地的殿阁是第一栋，前 `HALL_TRIES = 120` 次尝试只试它；殿阁的横向位置按尝试次数分三段 `HALL_SHIFT = (0, −0.2, +0.2)`（先居中，再让到左、右）。120 次仍放不下就不要它，照常按配方摆其余房屋。原来只在居中一处反复试，道路从格子后边（−z）出去时殿阁永远放不下，整格一栋房子都没有（实测 100/100 个种子）。让位后殿阁仍放不进道路两侧（殿阁宽约 0.64 格），所以**道路生成应避免从门派驻地格的后边出去**（路从前、左、右进出）——这条归 `RegionScene` 的道路生成，见 §3.5。
 - 参考实现：`tools/art/preview_grid.py` 的 `place_houses` / `_place_once` / `_house_fits` / `_same_key_adjacent` / `_blocks` / `house_types_from`，哈希与 `h32` / `hf` 相同；`houseRecipes.ts` 按它移植，测试对同一组种子比对结果（约束 7 加入后，原来 40 个种子的比对基准要重新生成）。
 
 #### 3.12.4 其他

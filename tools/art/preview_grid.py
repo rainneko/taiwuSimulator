@@ -569,6 +569,8 @@ HOUSE_RECIPES = {        # 聚居类别: ((栋数 min, max), houseKind 候选, �
     "sectSeat": ((3, 4), ("hall", "tile", "long"), 1.0),
 }
 HOUSE_FIRST = {"fort": "tower", "sectSeat": "hall"}
+HALL_TRIES = 120                    # 第一栋（瞭望楼 / 殿阁）至多试这么多次；还放不下就不要它，照常摆其余的（不至于一栋都没有）
+HALL_SHIFT = (0.0, -0.2, 0.2)       # 殿阁的横向位置：先居中，再让到左、右（各占 HALL_TRIES 的三分之一）
 HOUSE_CLEAR_R = 0.18     # 格心留出的空地半径（棋子站位与地名标注）
 HOUSE_DEPTH = 0.12       # 立牌的占地进深（格）：立牌是一张纸，但前后两栋要错开这么多才不像贴在一起
 HOUSE_SHOW = 0.5         # 前后错开、横向重叠的两栋，后面那栋在屏幕上至少露出自身高度的这个比例
@@ -691,7 +693,8 @@ def _place_once(i, j, kind, seed, types, near_road, cands, size_k, n, avoid=()) 
     for tries in range(360):
         if len(out) >= n:
             break
-        k = first if (first and not out) else cands[h32(seed, i, j, 301, tries) % len(cands)]
+        need_first = first and not out and tries < HALL_TRIES
+        k = first if need_first else cands[h32(seed, i, j, 301, tries) % len(cands)]
         if k not in types:
             continue
         used = {o.key for o in out}                # 同一格内：同一 houseKind 还有没用过的款时不重复用同一张图
@@ -702,8 +705,9 @@ def _place_once(i, j, kind, seed, types, near_road, cands, size_k, n, avoid=()) 
         x = i + 0.12 + 0.76 * hf(seed, i, j, 302, tries)
         z = j + 0.12 + 0.76 * hf(seed, i, j, 303, tries)
         if k == "hall" and not out:                # 殿阁：靠后居中，前面是院子（clear_centre）
-            sc = size_k * 0.9
-            x, z = cx + (hf(seed, i, j, 302, tries) - 0.5) * 0.06, j + 0.2 + 0.1 * hf(seed, i, j, 303, tries)
+            sc = size_k * 0.9                      # 道路从格子后边出去时居中放不下：依次让到左、右（HALL_SHIFT）
+            x = cx + HALL_SHIFT[min(tries * len(HALL_SHIFT) // HALL_TRIES, len(HALL_SHIFT) - 1)] + (hf(seed, i, j, 302, tries) - 0.5) * 0.06
+            z = j + 0.2 + 0.1 * hf(seed, i, j, 303, tries)
         elif z > qz and abs(x - qx) < (z - qz) * math.tan(VIEW_SECTOR_HALF) + 0.1:
             continue                               # 中心落在扇形（外扩一点）里的不用试
         # 有新款：只试抽到的那一款。款都用过了（只能重复）：从抽到的那款起依次试，取第一款放得下、且不与同款相邻的；
@@ -1336,6 +1340,59 @@ def standee_image(a: np.ndarray) -> Image.Image:
     return Image.fromarray(al.to_u8(np.concatenate([rgb, a[..., 3:]], -1)), "RGBA")
 
 
+CLIFF_WALLS = False      # 青绿 A/B 选项（--cliff-walls）：抬层侧壁印成赭色岩层，顶沿留一线纸芯白；默认纸芯白
+CLIFF_OCHRE = np.array([0.67, 0.50, 0.36], np.float32)
+CLIFF_DARK = np.array([0.56, 0.41, 0.30], np.float32)
+CLIFF_BAND = 0.014       # 岩层条纹的厚度（格，世界坐标的高度）
+
+
+def cliff_colour(hy: np.ndarray, top: np.ndarray) -> np.ndarray:
+    """岩层断崖的颜色：按高度交替深浅的赭色条纹；离顶沿 0.004 以内是纸芯白（切口）。"""
+    band = (np.floor(hy / CLIFF_BAND).astype(int) % 2).astype(np.float32)[:, None]
+    c = CLIFF_OCHRE[None, :] * (1 - band) + CLIFF_DARK[None, :] * band
+    rim_ = (top - hy < 0.004)[:, None]
+    return np.where(rim_, np.array(RIM_COLOR, np.float32)[None, :], c)
+
+
+QINGLV_WARM_K, QINGLV_GREEN_SHIFT = 0.55, 22.0
+
+
+def grade_qinglv(a: np.ndarray) -> np.ndarray:
+    """青绿 A/B 用的载入时调色（模拟运行时的逐像素调色）：橙黄（4°–60°）降饱和并往黄绿推一点，
+    草绿（50°–140°）推向青绿，整体略冷。输入 RGB 或 RGBA float，alpha 不变。"""
+    rgb = np.clip(a[..., :3], 0, 1)
+    mx, mn = rgb.max(-1), rgb.min(-1)
+    d = mx - mn + 1e-6
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    h = np.where(mx == r, ((g - b) / d) % 6, np.where(mx == g, (b - r) / d + 2, (r - g) / d + 4)) * 60
+    s = np.where(mx > 0, (mx - mn) / (mx + 1e-6), 0)
+    v = mx
+    warm = np.clip(1 - np.abs(h - 32) / 28, 0, 1)
+    green = np.clip(1 - np.abs(h - 95) / 45, 0, 1)
+    s = s * (1 - QINGLV_WARM_K * warm) * (1 - 0.15 * green)
+    h = (h + warm * 10 + green * QINGLV_GREEN_SHIFT) % 360
+    c = v * s
+    x = c * (1 - np.abs((h / 60) % 2 - 1))
+    m = v - c
+    k = (h // 60).astype(int)
+    z = np.zeros_like(c)
+    R_ = np.choose(k, [c, x, z, z, x, c])
+    G_ = np.choose(k, [x, c, c, x, z, z])
+    B_ = np.choose(k, [z, z, x, c, c, x])
+    out = np.stack([R_ + m, G_ + m, B_ + m], -1) * np.array([0.97, 1.0, 1.03], np.float32)
+    out = np.clip(out, 0, 1).astype(np.float32)
+    return np.concatenate([out, a[..., 3:]], -1) if a.shape[-1] == 4 else out
+
+
+def apply_grade(assets: "Assets", skip=()) -> None:
+    for d in (assets.ground, assets.standee, assets.piece):
+        for k in list(d):
+            if k not in skip and f"terrain.ground.{k}" not in skip:
+                d[k] = grade_qinglv(d[k])
+    if assets.road is not None and "region.road" not in skip:
+        assets.road = grade_qinglv(assets.road)
+
+
 def shade_wall(w: Wall, light: np.ndarray) -> np.ndarray:
     """侧壁颜色：纸芯色 × 朝光程度（WO1：竖直纸边露白色纸芯，背光一面暗一些）。"""
     nl = w.normal[0] * light[0] + w.normal[1] * light[2]
@@ -1429,7 +1486,7 @@ def cast_ground(scene: Scene, cam: Camera, tiles: dict, seed: int, light: np.nda
                 hi_lv = lev_of(hx - ux * e, hz - uz * e) * LEVEL_STEP
                 lower = hy < (lo_lv + hi_lv) / 2
                 k_ = (0.80 + 0.20 * nl) * np.where(lower, 0.9, 1.0)
-                c = rim[None, :] * k_[:, None]
+                c = (cliff_colour(hy, hi_lv) if CLIFF_WALLS else rim[None, :]) * k_[:, None]
                 cell_i, cell_j = np.floor(hx - ux * e).astype(int), np.floor(hz - uz * e).astype(int)
                 gr = np.array([outside(a_, b_) for a_, b_ in zip(cell_i.tolist(), cell_j.tolist())], bool)
                 if gr.any():
@@ -1537,22 +1594,24 @@ def make_preview(items: list[dict], *, cols: float, seed: int, size=(1920, 1080)
                  pawn: bool = True, ground_px: int | None = GROUND_PX, layers: bool = True,
                  houses: bool = False, level_step: float | None = None,
                  sight_warp: bool = False, features=frozenset(),
-                 peak_height: float = 0.5) -> tuple[Image.Image, Assets, Camera]:
-    global LEVEL_STEP
-    saved = LEVEL_STEP
+                 peak_height: float = 0.5, grade: str | None = None, grade_skip=(),
+                 cliff_walls: bool = False) -> tuple[Image.Image, Assets, Camera]:
+    global LEVEL_STEP, CLIFF_WALLS
+    saved, saved_cw = LEVEL_STEP, CLIFF_WALLS
     if level_step is not None:                     # 对比用：临时改模块级的层厚（render 与布置都读它），画完复原
         LEVEL_STEP = level_step
+    CLIFF_WALLS = cliff_walls
     try:
         return _make_preview(items, cols, seed, size, ortho, ss, terrains, settlements, roads, src, ground_src,
                              use_real, shadow, sight, region, pawn, ground_px, layers, houses, sight_warp,
-                             frozenset(features), peak_height)
+                             frozenset(features), peak_height, grade, tuple(grade_skip))
     finally:
-        LEVEL_STEP = saved
+        LEVEL_STEP, CLIFF_WALLS = saved, saved_cw
 
 
 def _make_preview(items, cols, seed, size, ortho, ss, terrains, settlements, roads, src, ground_src, use_real,
                   shadow, sight, region, pawn, ground_px, layers, houses, sight_warp,
-                  features=frozenset(), peak_height=0.5):
+                  features=frozenset(), peak_height=0.5, grade=None, grade_skip=()):
     terrains = terrains or list(NATURAL)
     assets = load_assets(items, terrains, src, ground_src, use_real)
     assets.ground_px = ground_px
@@ -1562,6 +1621,8 @@ def _make_preview(items, cols, seed, size, ortho, ss, terrains, settlements, roa
     cam = Camera(W * ss, H * ss, cols, ortho=ortho)
     scene = build_scene(items, assets, cam, terrains, seed, settlements, roads, region, layers, houses,
                         features, peak_height)
+    if grade == "qinglv":                          # 青绿 A/B：载入的图（含占位）统一调色，新风格重出的那几张跳过
+        apply_grade(assets, grade_skip)
     if pawn:                                       # 棋子（占位），站在注视格前半格，给尺度参照
         assets.standee["pawn"] = placeholder_pawn()
         py = level_at(scene, 0.5, 0.62, seed) * LEVEL_STEP if scene.levels else 0.0
@@ -1600,6 +1661,12 @@ def main(argv: list[str] | None = None) -> int:
                     help="v1.4 原型：异种格边两侧的过渡带（林缘、山脚散石、芦苇、睡莲、码头……，并入岸边件）；默认关")
     ap.add_argument("--ridges", action="store_true",
                     help="v1.4 原型：山体加鞍部（只降不升）、山牌按层分档（山麓丘 / 山 / 高山 / 主峰）、沿山脊线摆；默认关")
+    ap.add_argument("--grade", choices=("qinglv",),
+                    help="青绿 A/B：载入时对所有图做同一套调色（橙黄降饱和、草绿推向青绿、略冷），模拟运行时调色；默认不调")
+    ap.add_argument("--grade-skip", default="",
+                    help="配 --grade：不调色的 artKey，逗号分隔（已按新风格重出的图）")
+    ap.add_argument("--cliff-walls", action="store_true",
+                    help="青绿 A/B：抬层侧壁印成赭色岩层断崖（顶沿留一线纸芯白）；默认纸芯白")
     ap.add_argument("--peak-height", type=float, default=0.5,
                     help="配 --ridges：主峰山牌的高（格，默认 0.5；0.6 是待用户选的选项）")
     ap.add_argument("--level-step", type=float, default=None,
@@ -1633,7 +1700,9 @@ def main(argv: list[str] | None = None) -> int:
                                     ground_px=args.ground_px, layers=not args.flat, houses=args.houses,
                                     level_step=args.level_step, sight_warp=args.sight_warp,
                                     features=frozenset(f for f in ("rivers", "ecotones", "ridges") if getattr(args, f)),
-                                    peak_height=args.peak_height)
+                                    peak_height=args.peak_height, grade=args.grade,
+                                    grade_skip=[k.strip() for k in args.grade_skip.split(",") if k.strip()],
+                                    cliff_walls=args.cliff_walls)
     out = args.out or (al.ROOT / "art" / "region" / "review" /
                        f"preview-{args.zoom or 'c%g' % args.cols}-s{args.seed}{'-ortho' if args.ortho else ''}"
                        f"{'' if args.ground_px == GROUND_PX else '-g%d' % args.ground_px}"
@@ -1641,7 +1710,8 @@ def main(argv: list[str] | None = None) -> int:
                        f"{'' if args.level_step is None else '-ls%g' % args.level_step}"
                        f"{'-sw' if args.sight_warp else ''}{'-rv' if args.rivers else ''}"
                        f"{'-ec' if args.ecotones else ''}{'-rg' if args.ridges else ''}"
-                       f"{'' if args.peak_height == 0.5 else '-pk%g' % args.peak_height}.png")
+                       f"{'' if args.peak_height == 0.5 else '-pk%g' % args.peak_height}"
+                       f"{'-' + args.grade if args.grade else ''}{'-cw' if args.cliff_walls else ''}.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out)
     print(f"已写入 {al.rel(out)}（{w}×{h}，{'正交' if args.ortho else '透视'}，注视行约 {w / args.cols:.0f}px / 格）")
