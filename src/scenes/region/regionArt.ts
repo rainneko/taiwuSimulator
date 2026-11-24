@@ -1,7 +1,8 @@
 /**
  * WO3 布置数据：由 tools/art/region-assets.json 生成（kind / section 过滤后原样搬运），勿手改；
- * 清单变了就按同样规则重新生成。素材到位后改为运行时读 terrain-art.json。
+ * 清单变了就按同样规则重新生成。
  * FRAMES：artKey → [宽, 高]（米；平放件为边长）。HOUSE_TYPES：houseKind → [artKey, 高, 宽高比][]（清单 J 段）。
+ * FRAMES 在运行时由 setFrameSizes() 按 terrain-art.json / 真实图集的 frames 重建；读不到时就是这里的硬编码（FRAMES_DEFAULT）。
  */
 export interface GroundArt { density: [number, number]; fillers: string[]; fillerCount: [number, number]; pieces: string[]; pieceCount: [number, number] }
 export const GROUND_ART: Record<string, GroundArt> = {
@@ -25,7 +26,7 @@ export const GROUND_ART: Record<string, GroundArt> = {
   settlement: {"density": [0, 0], "fillers": [], "fillerCount": [0, 0], "pieces": ["ground.piece.dirt", "ground.piece.pebbles"], "pieceCount": [1, 2]},
 };
 export const SHORE = {"fillers": ["filler.reeds", "filler.rock.0", "filler.tuft.1"], "count": [1, 3], "band": 0.12} as { fillers: string[]; count: [number, number]; band: number };
-export const FRAMES: Record<string, [number, number]> = {
+export const FRAMES_DEFAULT: Readonly<Record<string, readonly [number, number]>> = {
   "terrain.standee.plain.0": [0.405, 0.45],
   "terrain.standee.plain.1": [0.54, 0.45],
   "terrain.standee.lake.0": [0.33, 0.55],
@@ -120,6 +121,33 @@ export const FRAMES: Record<string, [number, number]> = {
   "house.tower.0": [0.3, 0.5],
   "house.hall.0": [0.715, 0.55],
 };
+
+/** 运行时帧尺寸表（dressing / 占位图集读它）。原地改写，引用它的模块不用重新取。 */
+export const FRAMES: Record<string, [number, number]> = {};
+
+type FrameSource = { name: string; size: [number, number] }[] | Record<string, [number, number]>;
+const validSize = (v: unknown): v is [number, number] =>
+  Array.isArray(v) && v.length >= 2 && v.slice(0, 2).every((x) => typeof x === 'number' && x > 0 && Number.isFinite(x));
+
+/**
+ * 重建 FRAMES：先恢复硬编码，再按顺序叠上各来源（AtlasFrame[] 或 name → [宽, 高]）；坏条目跳过。
+ * 返回被覆盖 / 新增的帧数。
+ */
+export function setFrameSizes(...sources: (FrameSource | null | undefined)[]): number {
+  for (const k of Object.keys(FRAMES)) delete FRAMES[k];
+  for (const [k, v] of Object.entries(FRAMES_DEFAULT)) FRAMES[k] = [v[0], v[1]];
+  let n = 0;
+  for (const src of sources) {
+    if (!src) continue;
+    const entries: [string, unknown][] = Array.isArray(src)
+      ? src.filter((f) => f && typeof f.name === 'string').map((f) => [f.name, f.size])
+      : Object.entries(src);
+    for (const [name, size] of entries) if (validSize(size)) { FRAMES[name] = [size[0], size[1]]; n++; }
+  }
+  return n;
+}
+setFrameSizes();
+
 export type HouseType = [artKey: string, height: number, aspect: number];
 export const HOUSE_TYPES: Record<string, HouseType[]> = {
   cottage: [["house.cottage.0", 0.28, 1.15], ["house.cottage.1", 0.28, 1.1], ["house.cottage.2", 0.27, 1.05]],

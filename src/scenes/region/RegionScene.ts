@@ -9,7 +9,7 @@ import { ui, type Screen } from '../../app/store';
 import { createPaperMaterial, makeCardGeometry, PaperBatch, PaperCard, type Atlas } from '../../render/paper';
 import { HingeState } from '../../render/paper/hinge';
 import { DETAIL_PER_CELL, dressRegion, LOCATION_SIZE, MAX_MAIN, type Placement } from './dressing';
-import { makePlaceholderAtlas } from './placeholderArt';
+import { DEFAULT_REGION_ART_BASE, loadRegionAtlases, placeholderAtlases, type RegionAtlases } from './atlasLoader';
 import { Visibility } from './Visibility';
 import { warpPhase, type WarpPhase } from './warp';
 import { awayFromLevelEdge, heightAt, layerConfig, makeLevelGrid, type LevelGrid } from './levels';
@@ -17,7 +17,7 @@ import { buildLayerGeometry } from './TerrainLayers';
 import { planLocationGroups, type LocationGroup } from './LocationGroups';
 import { MAX_HOUSES_PER_CELL } from './houseRecipes';
 import { parseTerrainArt, TERRAIN_ART_DEFAULTS, type TerrainArtParams } from './terrainArt';
-import { buildGroundAtlas } from './GroundAtlas';
+import { buildGroundAtlas, buildSolidGroundAtlas, GROUND_SPAN, loadGroundArray, type GroundArray } from './GroundAtlas';
 import { GridGround, Hl } from './GridGround';
 import { findPath, pathCost } from './pathfinding';
 import { RegionCamera, Zoom } from './RegionCamera';
@@ -60,9 +60,17 @@ export class RegionScene implements IScene {
   params: TerrainArtParams = { ...TERRAIN_ART_DEFAULTS };
   /** 房屋图集缺失时是否用占位图集画房子（开发期 true；正式包置 false = 回退整张聚落立牌）。 */
   allowPlaceholderHouses = import.meta.env.DEV;
+  /** 地区美术内容包目录（terrain-art.json、四张图集、ground/）。 */
+  artBase = DEFAULT_REGION_ART_BASE;
+  /** 底纸数组缺失时的回落：solid = 纯色格；original = 原版方块图抠顶面（需要 assets/map_terrain）。 */
+  groundFallback: 'solid' | 'original' = 'solid';
   private houseArt: Atlas | null = null;
   private paramsLoaded = false;
+  /** 四张立牌图集（真实 / 补占位帧 / 全占位，见 atlasLoader）。 */
+  atlases: RegionAtlases | null = null;
   private art: Atlas | null = null;
+  private detailArt: Atlas | null = null;
+  private groundArray: GroundArray | null = null;
   private fillerHandles: number[] = [];
   private flatHandles: number[] = [];
   private detailShown = true;
@@ -106,15 +114,39 @@ export class RegionScene implements IScene {
 
   // ── IScene ──
   async preload(_assets: AssetCache, signal: AbortSignal): Promise<void> {
-    if (!this.atlas) this.atlas = await buildGroundAtlas(signal);
-    this.art ??= makePlaceholderAtlas();   // 真实图集接入前的占位
+    if (!this.atlases) {
+      // 真实图集 + 自产底纸；任何一项缺失都逐项回落（立牌 → 占位帧，底纸 → 纯色 / 原版方块图）
+      const [atlases, ground] = await Promise.all([
+        loadRegionAtlases(this.artBase, signal).catch((e: unknown) => {
+          if (signal.aborted) throw e;
+          console.error('[region-art] 图集加载器出错，全部用占位', e);
+          return placeholderAtlases();
+        }),
+        loadGroundArray(this.artBase, signal).catch((e: unknown) => {
+          if (signal.aborted) throw e;
+          console.error('[region-art] 底纸加载出错，回落', e);
+          return null;
+        }),
+      ]);
+      this.atlases = atlases;
+      this.groundArray = ground;
+    }
+    if (!this.atlas) {
+      // 方块图集：有底纸数组时只给缺层的地形兜底（纯色）；没有底纸数组时按 groundFallback 选
+      const original = !this.groundArray && this.groundFallback === 'original';
+      this.atlas = original ? await buildGroundAtlas(signal) : buildSolidGroundAtlas();
+      console.info(`[region-art] 底纸：${this.groundArray ? '自产底纸数组' : original ? '原版方块图' : '纯色格'}`);
+    }
+    const a = this.atlases;
+    this.art = a.terrain;
+    this.detailArt = a.detail;
     if (!this.paramsLoaded) {
       this.paramsLoaded = true;
-      const json = await _assets.loadJson<unknown>(`${import.meta.env.BASE_URL}content/base/art/region/terrain-art.json`, signal);
+      const json = await _assets.loadJson<unknown>(`${this.artBase}terrain-art.json`, signal);
       if (json) this.params = parseTerrainArt(json);
     }
-    // region/region-houses 图集的加载待 AssetCache 支持图集后接入；目前只有占位
-    this.houseArt = this.allowPlaceholderHouses ? this.art : null;
+    // 房屋图集整张缺失时：开发期用占位帧画房子，正式包回退整张聚落立牌
+    this.houseArt = a.houses.source !== 'placeholder' || this.allowPlaceholderHouses ? a.houses : null;
   }
 
   enter(params: unknown, _from: Screen | null): void {
@@ -211,6 +243,9 @@ export class RegionScene implements IScene {
   dispose(): void {
     this.clear();
     this.atlas?.texture.dispose();
+    this.groundArray?.texture.dispose();
+    if (this.atlases) for (const t of new Set(Object.values(this.atlases).map((x) => x.texture))) t.dispose();
+    this.atlas = null; this.groundArray = null; this.atlases = null;
     for (const arr of this.standeeTex.values()) for (const t of arr) t.dispose();
   }
 
@@ -269,6 +304,8 @@ export class RegionScene implements IScene {
     const n = r.size;
     const g = this.ground = new GridGround(n);
     g.setAtlas(this.atlas?.texture ?? null);
+    const ga = this.groundArray;
+    g.setGroundArray(ga?.texture ?? null, ga?.layerOf, ga?.noRotate, GROUND_SPAN);
     g.setTerrain(r.ground, r.variant, this.atlas?.variants ?? []);
     this.root.add(g.mesh);
     this.playerCell = r.playerCell;
@@ -367,16 +404,18 @@ export class RegionScene implements IScene {
     const accept = this.maxLevelAbs > 0 && lv ? (x: number, z: number) => awayFromLevelEdge(lv, x, z, phase) : undefined;
     const n = r.size, places = dressRegion(r, phase, accept);
     const tb = this.terrainBatch = new PaperBatch(this.art, { cards: MAX_MAIN * n * n + 64, frames: 40 });
-    const db = this.detailBatch = new PaperBatch(this.art, { cards: DETAIL_PER_CELL * n * n, frames: 40 });
+    const detail = this.detailArt ?? this.art;
+    const db = this.detailBatch = new PaperBatch(detail, { cards: DETAIL_PER_CELL * n * n, frames: 40 });
     this.vis.attach(tb.material, 'batch');
     this.vis.attach(db.material, 'batch');
     db.mesh.castShadow = true;
     const tint = new Color(), pos = new Vector3();
     const known = new Set(this.art.json.frames.map((f) => f.name));
+    const knownDetail = new Set(detail.json.frames.map((f) => f.name));
     // 起立：由近及远
     const delayOf = (p: Placement) => 0.2 + Math.hypot(p.x - this.tokenPos.x, p.z - this.tokenPos.z) * 0.05;
     for (const p of places) {
-      if (!known.has(p.artKey)) continue;
+      if (!(p.layer === 'main' ? known : knownDetail).has(p.artKey)) continue;
       pos.set(p.x, (p.layer === 'flat' ? 0.002 : 0.001) + this.heightAt(p.x, p.z), p.z);
       tint.setScalar(p.tint);
       if (p.layer === 'main') {

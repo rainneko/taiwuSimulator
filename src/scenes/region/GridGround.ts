@@ -27,6 +27,11 @@ export class GridGround {
     tGroundAtlas: { value: null as Texture | null },
     uGridN: { value: 1 },
     uHasAtlas: { value: 0 },
+    tGroundArray: { value: null as Texture | null },
+    uHasArray: { value: 0 },
+    uGroundSpan: { value: 2 },
+    uLayerOf: { value: new Array<number>(GROUND_TYPES).fill(-1) },
+    uNoRot: { value: new Array<number>(GROUND_TYPES).fill(0) },
     uWarpPhase: { value: new Vector4() },
     uStack: { value: STACK.map((v) => v / 255) },
     uWater: { value: WATER.map((w) => (w ? 1 : 0)) },
@@ -78,9 +83,22 @@ export class GridGround {
     if (paper) paper.uPaperFibre.value = v;
   }
 
+  /** 方块图 / 纯色图集（16 列 × 4 行）；底纸数组缺层的地形也按它取。 */
   setAtlas(tex: Texture | null): void {
     this.uniforms.tGroundAtlas.value = tex;
     this.uniforms.uHasAtlas.value = tex ? 1 : 0;
+  }
+
+  /**
+   * 自产底纸数组（WO3 §3.2）：layerOf[t] = 原版地面 t 的层号（-1 = 无，走图集）；每张底纸覆盖 span×span 格，
+   * 一格取其中一个窗口并做 8 种朝向之一（noRotate 只做镜像 + 0° / 180°）。传 null 关掉。
+   */
+  setGroundArray(tex: Texture | null, layerOf: number[] = [], noRotate: boolean[] = [], span = 2): void {
+    const u = this.uniforms;
+    u.tGroundArray.value = tex;
+    u.uHasArray.value = tex ? 1 : 0;
+    u.uGroundSpan.value = span;
+    for (let t = 0; t < GROUND_TYPES; t++) { u.uLayerOf.value[t] = layerOf[t] ?? -1; u.uNoRot.value[t] = noRotate[t] ? 1 : 0; }
   }
 
   /** 写地面：ground[i] 类型、variantByte[i] 随机字节；variants[t] = 该类型实际变体数。 */
@@ -120,6 +138,11 @@ uniform highp sampler2D tTerrain;
 uniform sampler2D tGroundAtlas;
 uniform float uGridN;
 uniform float uHasAtlas;
+uniform mediump sampler2DArray tGroundArray;
+uniform float uHasArray;
+uniform float uGroundSpan;
+uniform float uLayerOf[ ${GROUND_TYPES} ];
+uniform float uNoRot[ ${GROUND_TYPES} ];
 uniform float uStack[ ${GROUND_TYPES} ];
 uniform float uWater[ ${GROUND_TYPES} ];
 uniform highp sampler2D tLevel;
@@ -128,7 +151,16 @@ varying vec3 vWallN;
 float gLevel( ivec2 c ) { return texelFetch( tLevel, clamp( c, ivec2( 0 ), ivec2( int( uGridN ) - 1 ) ), 0 ).r; }
 ${WARP_GLSL}
 vec4 gCell( ivec2 c ) { return texelFetch( tTerrain, clamp( c, ivec2( 0 ), ivec2( int( uGridN ) - 1 ) ), 0 ); }
-int gId( vec4 t ) { return int( t.r * 255.0 + 0.5 ); }`)
+int gId( vec4 t ) { return int( t.r * 255.0 + 0.5 ); }
+// 朝向码 → 2×2 矩阵：bit0 镜像，bit1–2 旋转；noRotate 时只取 0° / 180°（WO3 §3.2.3）
+mat2 gOrient( int code, bool noRotate ) {
+	int r = ( code >> 1 ) & 3;
+	if ( noRotate ) r &= 2;
+	mat2 m = r == 0 ? mat2( 1.0, 0.0, 0.0, 1.0 ) : r == 1 ? mat2( 0.0, 1.0, -1.0, 0.0 )
+	       : r == 2 ? mat2( -1.0, 0.0, 0.0, -1.0 ) : mat2( 0.0, -1.0, 1.0, 0.0 );
+	if ( ( code & 1 ) != 0 ) m = m * mat2( -1.0, 0.0, 0.0, 1.0 );
+	return m;
+}`)
     .replace('#include <alphatest_fragment>', /* glsl */ `if ( vWall.x > 0.5 ) {
 	// 侧壁：纸芯白，朝光程度 0.80 + 0.20·max(0, n·L)，下半截再压暗一成
 	float ndl = max( 0.0, dot( normalize( vWallN ), normalize( vec3( -6.0, 12.0, 4.0 ) ) ) );
@@ -148,6 +180,15 @@ int gId( vec4 t ) { return int( t.r * 255.0 + 0.5 ); }`)
 	vec3 base = uHasAtlas > 0.5
 		? textureGrad( tGroundAtlas, auv, dFdx( g ) / atl, dFdy( g ) / atl ).rgb
 		: vec3( 0.7, 0.68, 0.6 );
+	float layer = uLayerOf[ id ];
+	if ( uHasArray > 0.5 && layer >= 0.0 ) {
+		// 底纸窗口 + 朝向：按「原坐标 − 所属格」取（扭进来的异种格也按原坐标，底纸不变形）；随机码取 tTerrain.a
+		int rnd = int( t.a * 255.0 + 0.5 );
+		mat2 R = gOrient( rnd, uNoRot[ id ] > 0.5 );
+		vec2 win = mod( vec2( float( ( rnd >> 3 ) & 1 ), float( ( rnd >> 4 ) & 1 ) ), uGroundSpan );
+		vec2 uv = ( R * ( g - vec2( cell ) - 0.5 ) + 0.5 + win ) / uGroundSpan;
+		base = textureGrad( tGroundArray, vec3( uv, layer ), R * dFdx( g ) / uGroundSpan, R * dFdy( g ) / uGroundSpan ).rgb;
+	}
 	base *= 0.95 + 0.1 * t.a;
 	float stack = uStack[ id ];
 	bool water = uWater[ id ] > 0.5;
