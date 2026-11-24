@@ -24,37 +24,30 @@ const HOVER_IDS = ['continue', 'new', 'load', 'settings', 'credits'];
 const SPLASH_LOGO_DUR = 3.0;   // logo fade-in + hold (seconds)
 const SPLASH_TITLE_DUR = 1.0;  // title fade-in after logo
 
-// -- Scroll strips --
-/** World-space width of one scroll strip (the reference 4320 / 1920 * visible width). */
-const STRIP_W = 8;
-/** World-space height of one scroll strip. */
-const STRIP_H = 4.8;
-/** Scroll speed in world units/s. */
+// -- Scroll strips (sized to fill camera frustum at STRIP_Z) --
+const STRIP_W = 16;
+const STRIP_H = 9;
 const SCROLL_SPEED = 0.25;
-/** Z depth of scroll strip groups (behind center). */
-const STRIP_Z = -6;
-/** Y of scroll strips in menu phase (they slide in from above). */
-const STRIP_Y = 0.6;
-/** Off-screen Y for intro slide-in. */
-const STRIP_Y_OFF = 6;
+const STRIP_Z = -4;
+const STRIP_Y = -2.5;
+const STRIP_Y_OFF = 12;
 
 // -- Scroll text poem panels --
-const TEXT_W = 1.6;
-const TEXT_H = 2.2;
-/** Color pulse: endpoints for yoyo linear 5s. */
+const TEXT_W = 2.0;
+const TEXT_H = 3.0;
 const PULSE_COLOR_A = new Color(1, 1, 1);
 const PULSE_COLOR_B = new Color(0.314, 0.275, 0.255);
 const PULSE_PERIOD = 5;
 
-// -- Edge wave borders --
-const EDGE_W = 16;
-const EDGE_H = 1.1;
-const EDGE_BOB_AMP = 0.06;
+// -- Edge wave borders (prominent, top & bottom) --
+const EDGE_W = 20;
+const EDGE_H = 2.5;
+const EDGE_BOB_AMP = 0.1;
 const EDGE_BOB_FREQ = 0.5;
 
-// -- Title --
-const TITLE_W = 4.0;
-const TITLE_H = 1.74;  // aspect ratio from 3348x1458
+// -- Title (top-center, large calligraphy) --
+const TITLE_W = 5.5;
+const TITLE_H = 2.4;
 
 // -- Fallback procedural layers (when assets missing) --
 const LAYERS = 5;
@@ -75,7 +68,7 @@ interface ScrollStrip {
   backMesh: Mesh;
   artMesh1: Mesh;
   artMesh2: Mesh;
-  textCards: PaperCard[];
+  textPanels: Mesh[];
 }
 
 function makePlane(w: number, h: number, mat: MeshBasicMaterial | ReturnType<typeof createPaperMaterial>): Mesh {
@@ -286,29 +279,27 @@ export class MenuScene implements IScene {
       group.add(artMesh2);
       this.disposables.push(artMesh2.geometry, artMat2);
 
-      // ScrollText poem PaperCards
-      const textCards: PaperCard[] = [];
+      // ScrollText poem panels — flat overlays on the scroll, semi-transparent, move with scroll
+      const textPanels: Mesh[] = [];
       const textsPerStrip = si === 0 ? [0, 1, 2, 3] : [4, 5, 6, 7, 8];
       for (let ti = 0; ti < textsPerStrip.length; ti++) {
         const texIdx = textsPerStrip[ti];
         const textTex = this.loadedTex.get(`text${texIdx}`) ?? null;
-        const mat = createPaperMaterial(textTex ? { map: textTex, cutout: true } : { color: 0x8d7a5c, cutout: false });
-        const card = new PaperCard(
-          makeCardGeometry({ width: TEXT_W, height: TEXT_H, uv: [0, 0, 1, 1] }),
-          mat,
-        );
-        // Distribute across the strip width
+        if (!textTex) continue;
+        const mat = new MeshBasicMaterial({
+          map: textTex, transparent: true, opacity: 0.45, depthWrite: false,
+        });
+        const panel = makePlane(TEXT_W, TEXT_H, mat);
+        // Distribute across strip, vertically centered on the scroll art area
         const spacing = STRIP_W / (textsPerStrip.length + 1);
-        card.position.set(-STRIP_W / 2 + spacing * (ti + 1), 0, 0.05);
-        card.castShadow = true;
-        group.add(card);
-        textCards.push(card);
-        this.cards.push(card);
-        this.disposables.push(card.geometry, mat);
+        panel.position.set(-STRIP_W / 2 + spacing * (ti + 1), STRIP_H * 0.42, 0.03);
+        group.add(panel);
+        textPanels.push(panel);
+        this.disposables.push(panel.geometry, mat);
       }
 
       s.add(group);
-      this.strips.push({ group, backMesh, artMesh1, artMesh2, textCards });
+      this.strips.push({ group, backMesh, artMesh1, artMesh2, textPanels });
     }
 
     // -- Edge wave borders --
@@ -318,19 +309,19 @@ export class MenuScene implements IScene {
     if (edgeTopTex) {
       const mat = new MeshBasicMaterial({ map: edgeTopTex, transparent: true, depthWrite: false });
       this.edgeTop = makePlane(EDGE_W, EDGE_H, mat);
-      this.edgeTop.position.set(0, STRIP_H + 0.5, STRIP_Z + 1);
+      this.edgeTop.position.set(0, 5.5, STRIP_Z + 2);
       s.add(this.edgeTop);
       this.disposables.push(this.edgeTop.geometry, mat);
     }
     if (edgeBotTex) {
       const mat = new MeshBasicMaterial({ map: edgeBotTex, transparent: true, depthWrite: false });
       this.edgeBottom = makePlane(EDGE_W, EDGE_H, mat);
-      this.edgeBottom.position.set(0, -0.3, STRIP_Z + 1);
+      this.edgeBottom.position.set(0, -1.8, STRIP_Z + 2);
       s.add(this.edgeBottom);
       this.disposables.push(this.edgeBottom.geometry, mat);
     }
 
-    // -- Game title calligraphy --
+    // -- Game title calligraphy (top-center, in front of scroll strips) --
     const titleTex = this.loadedTex.get('gameTitle');
     if (titleTex) {
       const mat = createPaperMaterial({ map: titleTex, cutout: true, color: 0xffffff });
@@ -338,7 +329,7 @@ export class MenuScene implements IScene {
         makeCardGeometry({ width: TITLE_W, height: TITLE_H, uv: [0, 0, 1, 1] }),
         mat,
       );
-      this.titleCard.position.set(0, 0.02, 2);
+      this.titleCard.position.set(0, 3.2, STRIP_Z + 1.5);
       s.add(this.titleCard);
       this.cards.push(this.titleCard);
       this.disposables.push(this.titleCard.geometry, mat);
@@ -444,9 +435,8 @@ export class MenuScene implements IScene {
       this.titleFade.x = 0;
       this.titleFade.v = 0;
       for (const strip of this.strips) {
-        for (const tc of strip.textCards) {
-          tc.hinge.theta = 0; tc.hinge.vel = 0; tc.state = HingeState.FLAT;
-          tc.rise(0.3);
+        for (const p of strip.textPanels) {
+          (p.material as MeshBasicMaterial).opacity = 0;
         }
       }
       if (this.titleCard) {
@@ -488,8 +478,8 @@ export class MenuScene implements IScene {
       this.stripSlideY.v = 0;
       for (const strip of this.strips) {
         strip.group.position.y = STRIP_Y;
-        for (const tc of strip.textCards) {
-          tc.hinge.theta = Math.PI / 2; tc.hinge.vel = 0; tc.state = HingeState.LOCKED; tc.update(0);
+        for (const p of strip.textPanels) {
+          (p.material as MeshBasicMaterial).opacity = 0.45;
         }
       }
       if (this.titleCard) {
@@ -536,9 +526,12 @@ export class MenuScene implements IScene {
 
     if (this.hasOriginalAssets) {
       this.updateOriginalMenu(dt, reduced);
-      // Check if text cards are still animating
+      // Fade in text panels during slide-in
       for (const strip of this.strips) {
-        for (const tc of strip.textCards) { tc.update(dt); moving ||= tc.moving; }
+        for (const p of strip.textPanels) {
+          const mat = p.material as MeshBasicMaterial;
+          if (mat.opacity < 0.45) mat.opacity = Math.min(0.45, mat.opacity + dt * 0.5);
+        }
       }
     } else {
       for (const c of this.fallbackCards) { c.update(dt); moving ||= c.moving; }
@@ -642,24 +635,24 @@ export class MenuScene implements IScene {
       }
     }
 
-    // -- Color pulse on poem text cards --
+    // -- Color pulse on poem text panels --
     for (const strip of this.strips) {
-      for (let i = 0; i < strip.textCards.length; i++) {
-        const card = strip.textCards[i];
+      for (let i = 0; i < strip.textPanels.length; i++) {
+        const panel = strip.textPanels[i];
         const delay = i * 1.0; // stagger by 1s
         const t = yoyo(this.time, PULSE_PERIOD, delay);
-        const mat = card.material;
+        const mat = panel.material as MeshBasicMaterial;
         mat.color.copy(PULSE_COLOR_A).lerp(PULSE_COLOR_B, t);
       }
     }
 
     // -- Edge wave bobbing --
     if (this.edgeTop) {
-      const baseY = STRIP_H + 0.5;
+      const baseY = 5.5;
       this.edgeTop.position.y = baseY + Math.sin(this.time * EDGE_BOB_FREQ * Math.PI * 2) * EDGE_BOB_AMP;
     }
     if (this.edgeBottom) {
-      const baseY = -0.3;
+      const baseY = -1.8;
       this.edgeBottom.position.y = baseY + Math.sin(this.time * EDGE_BOB_FREQ * Math.PI * 2 + Math.PI) * EDGE_BOB_AMP;
     }
 
