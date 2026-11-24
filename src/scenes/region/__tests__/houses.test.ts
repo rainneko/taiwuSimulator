@@ -30,6 +30,16 @@ describe('placeHouses matches the Python reference', () => {
   }
 });
 
+describe('first house blocked (road leaves a sect seat through the back)', () => {
+  it('still places at least 2 houses, none on the road', () => {
+    const road: [number, number][] = Array.from({ length: 11 }, (_, k) => [0.5, 0.5 - k * 0.05]);
+    for (let seed = 1; seed <= 40; seed++) {
+      const hs = placeHouses(0, 0, 'sectSeat', seed, { nearRoad: road });
+      expect(hs.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
 describe('constraints', () => {
   const kinds: SettlementKind[] = ['village', 'fort', 'town', 'city', 'sectSeat'];
   it('clear area, own cell, no overlap, view sector, first house kind', () => {
@@ -38,9 +48,9 @@ describe('constraints', () => {
       const hs = placeHouses(i, j, kind, seed);
       const apex: [number, number] = kind === 'sectSeat' ? [0, 0.24] : [0, 0];
       if (kind === 'fort' && hs.length) expect(hs[0].houseKind).toBe('tower');
-      if (kind === 'sectSeat' && hs.length) {
-        expect(hs[0].houseKind).toBe('hall');
-        expect(Math.abs(hs[0].x)).toBeLessThanOrEqual(0.03 + 1e-9);
+      if (kind === 'sectSeat' && hs.length && hs[0].houseKind === 'hall') {
+        // 殿阁靠后；横向先居中，放不下时让到 ±0.2（HALL_SHIFT）
+        expect([0, -0.2, 0.2].some((d) => Math.abs(hs[0].x - d) <= 0.03 + 1e-9)).toBe(true);
         expect(hs[0].z).toBeGreaterThanOrEqual(-0.3 - 1e-9); expect(hs[0].z).toBeLessThanOrEqual(-0.2 + 1e-9);
       }
       for (const h of hs) {

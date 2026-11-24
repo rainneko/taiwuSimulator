@@ -110,39 +110,77 @@ function blocks(a: H, b: H): boolean {
   return (front.z - back.z) * Math.tan(PITCH) < front.h - HOUSE_SHOW * back.h;
 }
 
+/** 第一栋（瞭望楼 / 殿阁）至多试这么多次；还放不下就不要它，照常摆其余的。 */
+export const HALL_TRIES = 120;
+/** 殿阁横向位置：先居中，再让到左、右（各占 HALL_TRIES 的三分之一）。 */
+export const HALL_SHIFT = [0.0, -0.2, 0.2];
+
+/** 避让点：[x, z, 半径]（v1.4 原型：河）。 */
+export type AvoidPoint = [number, number, number];
+
+function houseFits(h: H, out: H[], i: number, j: number, kind: SettlementKind, phase: WarpPhase,
+  qx: number, qz: number, nearRoad: P2[], avoid: AvoidPoint[]): boolean {
+  const poly = corners(h);
+  for (const [px, pz] of poly) {                   // 四角都画在本格（扭曲后的归属格）
+    const [dx, dz] = gWarp(px, pz, phase);
+    if (Math.floor(px + dx) !== i || Math.floor(pz + dz) !== j) return false;
+  }
+  if (pointInPoly([qx, qz], poly, clearRadius(kind))) return false;              // 空地
+  if (inViewSector(poly, [qx, qz])) return false;                                // 朝镜头的扇形
+  if (nearRoad.some((pt) => pointInPoly(pt, poly, ROAD_W / 2 + 0.02))) return false;   // 道路
+  if (avoid.some(([ax, az, r]) => pointInPoly([ax, az], poly, r))) return false;
+  return !out.some((o) => blocks(h, o));
+}
+
+/** 只能重复用同一张图时：按屏幕横向（x，同 x 再按 z）排开，两栋相同的不能相邻。 */
+function sameKeyAdjacent(h: H, out: H[]): boolean {
+  const order = [...out, h].sort((a, b) => a.x - b.x || a.z - b.z);
+  const k = order.indexOf(h);
+  return [k - 1, k + 1].some((m) => m >= 0 && m < order.length && order[m].key === h.key);
+}
+
 function placeOnce(i: number, j: number, kind: SettlementKind, seed: number, phase: WarpPhase,
-  types: Record<string, HouseType[]>, nearRoad: P2[], cands: string[], sizeK: number, n: number): H[] {
+  types: Record<string, HouseType[]>, nearRoad: P2[], avoid: AvoidPoint[], cands: string[], sizeK: number, n: number): H[] {
   const out: H[] = [];
   const cx = i + 0.5;
   const [qx, qz] = clearCentre(i, j, kind);
   const first = HOUSE_FIRST[kind];
   for (let tries = 0; tries < 360; tries++) {
     if (out.length >= n) break;
-    const k = first && !out.length ? first : cands[h32(seed, i, j, 301, tries) % cands.length];
-    const list = types[k];
-    if (!list) continue;
-    const [key, hh, asp] = list[h32(seed, i, j, 305, tries) % list.length];
+    const needFirst = !!first && !out.length && tries < HALL_TRIES;
+    const k = needFirst ? first! : cands[h32(seed, i, j, 301, tries) % cands.length];
+    if (!types[k]) continue;
+    const used = new Set(out.map((o) => o.key));    // 同一格内：同款还有没用过的就不重复用同一张图
+    const fresh = types[k].filter((v) => !used.has(v[0]));
+    const pool = fresh.length ? fresh : types[k];
+    const k0 = h32(seed, i, j, 305, tries) % pool.length;
     let sc = sizeK * (0.92 + 0.16 * hf(seed, i, j, 308, tries));
     let x = i + 0.12 + 0.76 * hf(seed, i, j, 302, tries);
     let z = j + 0.12 + 0.76 * hf(seed, i, j, 303, tries);
-    if (k === 'hall' && !out.length) {              // 殿阁：靠后居中，前面是院子
+    if (k === 'hall' && !out.length) {              // 殿阁：靠后，前面是院子；道路从后边出去时依次让到左、右
       sc = sizeK * 0.9;
-      x = cx + (hf(seed, i, j, 302, tries) - 0.5) * 0.06;
+      x = cx + HALL_SHIFT[Math.min(Math.floor(tries * HALL_SHIFT.length / HALL_TRIES), HALL_SHIFT.length - 1)]
+        + (hf(seed, i, j, 302, tries) - 0.5) * 0.06;
       z = j + 0.2 + 0.1 * hf(seed, i, j, 303, tries);
     } else if (z > qz && Math.abs(x - qx) < (z - qz) * Math.tan(VIEW_SECTOR_HALF) + 0.1) continue;
-    const h: H = { key, kind: k, x, z, w: hh * asp * sc, h: hh * sc };
-    const poly = corners(h);
-    let ok = true;                                   // 四角都画在本格（扭曲后的归属格）
-    for (const [px, pz] of poly) {
-      const [dx, dz] = gWarp(px, pz, phase);
-      if (Math.floor(px + dx) !== i || Math.floor(pz + dz) !== j) { ok = false; break; }
+    // 有新款：只试抽到的那款；款都用过了：从抽到的那款起依次试，再按配方顺序试别的种类里还没用过的款
+    const attempts: Array<[string, HouseType]> = fresh.length
+      ? [[k, pool[k0]]]
+      : pool.map((_, m) => [k, pool[(k0 + m) % pool.length]] as [string, HouseType]);
+    if (!fresh.length) {
+      for (const c of [...new Set(cands)]) {
+        if (c === k || !types[c]) continue;
+        const v = types[c].find((t) => !used.has(t[0]));
+        if (v) attempts.push([c, v]);
+      }
     }
-    if (!ok) continue;
-    if (pointInPoly([qx, qz], poly, clearRadius(kind))) continue;              // 空地
-    if (inViewSector(poly, [qx, qz])) continue;                                // 朝镜头的扇形
-    if (nearRoad.some((pt) => pointInPoly(pt, poly, ROAD_W / 2 + 0.02))) continue;   // 道路
-    if (out.some((o) => blocks(h, o))) continue;
-    out.push(h);
+    for (const [kk, [key, hh, asp]] of attempts) {
+      const h: H = { key, kind: kk, x, z, w: hh * asp * sc, h: hh * sc };
+      if (houseFits(h, out, i, j, kind, phase, qx, qz, nearRoad, avoid) && !(used.has(key) && sameKeyAdjacent(h, out))) {
+        out.push(h);
+        break;
+      }
+    }
   }
   return out;
 }
@@ -152,13 +190,13 @@ function placeOnce(i: number, j: number, kind: SettlementKind, seed: number, pha
  * nearRoad：附近道路中线上的采样点（世界格坐标）。
  */
 export function placeHouses(i: number, j: number, kind: SettlementKind, seed: number,
-  opts: { types?: Record<string, HouseType[]>; nearRoad?: P2[]; phase?: WarpPhase } = {}): HousePlacement[] {
-  const types = opts.types ?? HOUSE_TYPES, nearRoad = opts.nearRoad ?? [], phase = opts.phase ?? warpPhase(seed);
+  opts: { types?: Record<string, HouseType[]>; nearRoad?: P2[]; avoid?: AvoidPoint[]; phase?: WarpPhase } = {}): HousePlacement[] {
+  const types = opts.types ?? HOUSE_TYPES, nearRoad = opts.nearRoad ?? [], avoid = opts.avoid ?? [], phase = opts.phase ?? warpPhase(seed);
   const [[lo, hi], cands, sizeK] = HOUSE_RECIPES[kind] ?? HOUSE_RECIPES.village;
   const n = lo + h32(seed, i, j, 300) % (hi - lo + 1);
   let best: H[] = [];
   for (const m of HOUSE_SHRINK) {
-    const got = placeOnce(i, j, kind, seed, phase, types, nearRoad, cands, sizeK * m, n);
+    const got = placeOnce(i, j, kind, seed, phase, types, nearRoad, avoid, cands, sizeK * m, n);
     if (got.length > best.length) best = got;
     if (best.length >= lo) break;
   }
