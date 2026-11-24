@@ -2,7 +2,9 @@ import { AmbientLight, DirectionalLight, OrthographicCamera, Scene, WebGLRendere
 import type { CombatEvent, CombatState } from '../../core/combat';
 import { DEFEAT_THRESHOLD } from '../../core/combat';
 import { paperGlobals } from '../paper';
+import type { spine } from '../spine-webgl-3.8';
 import { AnimationController } from './AnimationController';
+import { CombatDirector, PX_PER_DIST } from './CombatDirector';
 import { loadSkillAnimTable, type SkillAnimTable } from './animMapping';
 import { ScreenShake, TimeScaler } from './HitFeel';
 import { hudState, mountHud } from './hud/Hud';
@@ -19,11 +21,16 @@ export interface CombatRendererOptions {
   onPauseToggle?: () => void;
 }
 
-/** 逻辑距离 1 单位对应的设计像素 */
-const PX_PER_DIST = 150;
-
-/** 角色原版朝向：skeleton 默认面朝右（玩家在左，不翻转；敌方水平镜像）。 */
-const PLAYER_FLIP = false;
+/**
+ * 镜头缩放随距离：近身 2.0 时人最大，拉到 9.0 时缩到约 0.6。
+ * 用落脚点间距（跳跃补间中的值）而不是逻辑距离，镜头与跳跃同步。
+ */
+const ZOOM_NEAR = 1.08;
+const ZOOM_FAR = 0.62;
+function zoomForGap(gapPx: number): number {
+  const k = Math.min(1, Math.max(0, (gapPx / PX_PER_DIST - 2) / 7));
+  return ZOOM_NEAR + (ZOOM_FAR - ZOOM_NEAR) * k;
+}
 
 function makeCanvas(parent: HTMLElement, z: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -48,11 +55,16 @@ export class CombatRenderer {
   readonly shake: ScreenShake;
   actors: [SpineActor, SpineActor] | null = null;
   controllers: [AnimationController, AnimationController] | null = null;
+  director: CombatDirector | null = null;
   timeScaler: TimeScaler | null = null;
   private skills: SkillAnimTable = {};
   private unmountHud: () => void;
   private ro: ResizeObserver;
-  private camX = 0;
+  private skeletonData: spine.SkeletonData | null = null;
+  /** 屏幕中心对应的世界 x */
+  private camX = DESIGN_W / 2;
+  private zoom = 1;
+  private viewReady = false;
 
   constructor(private container: HTMLElement, private opts: CombatRendererOptions = {}) {
     this.stage = document.createElement('div');
@@ -87,6 +99,7 @@ export class CombatRenderer {
       this.background.load(this.opts.bgSet ?? 0),
     ]);
     this.skills = skills;
+    this.skeletonData = data.skeletonData;
     const skins = this.opts.skins ?? ['doll', 'doll'];
     this.actors = [new SpineActor(data.skeletonData, skins[0]), new SpineActor(data.skeletonData, skins[1])];
     this.spineLayer.actors.push(...this.actors);
@@ -98,18 +111,21 @@ export class CombatRenderer {
   /** 绑定一场战斗：按 fighters 顺序建两个动画控制器。 */
   bind(state: CombatState) {
     if (!this.actors) throw new Error('CombatRenderer.load() 未完成');
-    const fb = {
-      onHit: (target: SpineActor, sev: 1 | 2 | 3) => {
-        target.flash(sev === 1 ? 2 : 3);
+    for (const a of this.actors) { a.animationState.clearListeners(); a.animationState.clearTracks(); }
+    this.controllers = [
+      new AnimationController(state.fighters[0].id, this.actors[0], this.skills),
+      new AnimationController(state.fighters[1].id, this.actors[1], this.skills),
+    ];
+    this.director = new CombatDirector(state, this.controllers, this.skeletonData!, {
+      onImpact: (target, sev) => {
+        this.actors![target].flash(sev === 1 ? 2 : 3);
         this.timeScaler!.applyHitstop([0, 3, 5, 8][sev]);
         if (sev >= 2) this.shake.add(sev * 4, sev * 3, 8 + sev * 4);
       },
       onFinisher: () => this.timeScaler!.applySlowmo(12),
-    };
-    this.controllers = [
-      new AnimationController(state.fighters[0].id, this.actors[0], this.skills, fb),
-      new AnimationController(state.fighters[1].id, this.actors[1], this.skills, fb),
-    ];
+    });
+    this.viewReady = false;
+    hudState.value = { ...hudState.value, ended: null };
   }
 
   /** 是否处于顿帧（演示中可据此暂停逻辑步进） */
@@ -118,30 +134,40 @@ export class CombatRenderer {
   /** 每渲染帧调用：events 为本帧核心引擎产出的事件。 */
   renderFrame(state: CombatState, dt: number, events: readonly CombatEvent[] = []) {
     const [f1, f2] = state.fighters;
-    if (this.controllers) {
-      for (const c of this.controllers) {
-        const self = c.actorId === f1.id ? f1 : f2;
-        c.sync(self);
-        for (const ev of events) c.handleEvent(ev, self);
+    const d = this.director;
+    if (this.controllers && d) {
+      this.controllers[0].sync(f1);
+      this.controllers[1].sync(f2);
+      d.handleEvents(state, events);
+    }
+    const ts = this.timeScaler?.tick() ?? 1;
+    this.shake.update();
+    d?.update(dt, ts);
+
+    // 镜头：跟两人落脚点中点平移，按间距推拉
+    if (d) {
+      const targetCam = d.viewMid;
+      const targetZoom = zoomForGap(Math.abs(d.viewGap));
+      if (!this.viewReady) { this.camX = targetCam; this.zoom = targetZoom; this.viewReady = true; }
+      this.camX += d.lastShift + (targetCam - this.camX) * Math.min(1, dt * 4);
+      this.zoom += (targetZoom - this.zoom) * Math.min(1, dt * 2.5);
+    }
+
+    if (this.actors && d) {
+      for (let i = 0; i < 2; i++) {
+        const m = d.motions[i];
+        this.actors[i].setPosition(m.worldX, GROUND_Y + m.height, m.facing < 0, m.squashY);
       }
     }
-    this.timeScaler?.tick();
-    this.shake.update();
+    this.spineLayer.setView(this.camX, this.zoom);
+    this.spineLayer.update(dt);
 
-    // 镜头：两人中点（逻辑坐标）→ 视差偏移
-    const mid = ((f1.position + f2.position) / 2) * PX_PER_DIST;
-    const targetCam = Math.max(-300, Math.min(300, Number.isFinite(mid) ? mid : 0));
-    this.camX += (targetCam - this.camX) * 0.1;
-    this.background.update(this.camX);
-    this.bgRenderer.render(this.bgScene, this.bgCamera);
-
-    if (this.actors) {
-      const spread = Math.max(1, state.distance) * PX_PER_DIST;
-      const cx = DESIGN_W / 2;
-      this.actors[0].setPosition(cx - spread / 2, GROUND_Y, PLAYER_FLIP);
-      this.actors[1].setPosition(cx + spread / 2, GROUND_Y, !PLAYER_FLIP);
+    this.background.update(this.camX, this.zoom);
+    if (this.actors && d) {
+      for (let i = 0; i < 2; i++) this.background.setShadow(i, this.camX, this.zoom, this.actors[i].bodyX, d.motions[i].height);
     }
-    this.spineLayer.render(dt);
+    this.bgRenderer.render(this.bgScene, this.bgCamera);
+    this.spineLayer.draw();
 
     const thr = Math.round(DEFEAT_THRESHOLD[state.battleType] * 1000);
     const hf = (f: typeof f1) => ({

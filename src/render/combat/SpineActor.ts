@@ -28,10 +28,16 @@ export class SpineActor {
     return !!this.data.findAnimation(name);
   }
 
-  setPosition(x: number, y: number, flipX: boolean) {
+  setPosition(x: number, y: number, flipX: boolean, scaleY = 1) {
     this.skeleton.x = x;
     this.skeleton.y = y;
     this.skeleton.scaleX = flipX ? -1 : 1;
+    this.skeleton.scaleY = scaleY;
+  }
+
+  /** 腰骨世界坐标 x（update 之后有效）：身体实际所在位置，影子跟它走 */
+  get bodyX(): number {
+    return this.skeleton.findBone('waist')?.worldX ?? this.skeleton.x;
   }
 
   playAnimation(name: string, loop = false, track = 0): spine.TrackEntry | null {

@@ -50,7 +50,7 @@ export function loadSpineData(
   return new Promise((resolve, reject) => {
     const poll = () => {
       if (am.hasErrors()) return reject(new Error('Spine 资源加载失败: ' + JSON.stringify(am.getErrors())));
-      if (!am.isLoadingComplete()) return void requestAnimationFrame(poll);
+      if (!am.isLoadingComplete()) return void setTimeout(poll, 16);
       const atlas = am.get('skeleton.atlas') as spine.TextureAtlas;
       fixAtlasDeclaredSize(atlas, am.get('skeleton.atlas?declared') as string);
       const json = new spine.SkeletonJson(new spine.AtlasAttachmentLoader(atlas));
