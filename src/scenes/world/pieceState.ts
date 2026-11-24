@@ -11,7 +11,7 @@ export const PIECE_TARGETS: Record<PieceState, PieceTarget> = {
   idle:     { lift: 0,    accent: 0, dim: 1.0,  sat: 1.0, rim: 1.0 },
   hover:    { lift: 0.04, accent: 0, dim: 1.04, sat: 1.0, rim: 1.25 },
   selected: { lift: 0.08, accent: 1, dim: 1.0,  sat: 1.0, rim: 1.25 },
-  dimmed:   { lift: 0,    accent: 0, dim: 0.8,  sat: 0.6, rim: 0.9 },
+  dimmed:   { lift: 0,    accent: 0, dim: 0.9,  sat: 0.75, rim: 0.95 },   // 底图本身偏暗，压暗调轻
   locked:   { lift: 0,    accent: 0, dim: 0.9,  sat: 0.0, rim: 0.9 },
 };
 

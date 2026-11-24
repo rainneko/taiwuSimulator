@@ -26,6 +26,14 @@ export interface MapLayoutLite {
 }
 
 const WM = `${import.meta.env.BASE_URL}assets/world-map/world_map/`;
+/** 线上替代素材（自产 / 生成图）：content/base/art/worldmap/，文件名与原版相同。 */
+const CONTENT = `${import.meta.env.BASE_URL}content/base/art/worldmap/`;
+/** dev 调试：URL 带 ?fallback 时跳过原版素材，看降级效果。 */
+export const SKIP_ORIGINAL = typeof location !== 'undefined' && new URLSearchParams(location.search).has('fallback');
+/** 原版素材 URL → content/ 里对应的替代图 URL（云朵等不在表里的返回 null）。 */
+export function contentFallback(url: string): string | null {
+  return url.startsWith(WM) ? CONTENT + url.slice(WM.length).replace(/^base\//, '') : null;
+}
 const CLOUD = `${import.meta.env.BASE_URL}assets/map_terrain/map_terrain/worldmap_overlays/`;
 
 /** [MapPlace 编号, 中心 x, 中心 y, 档高, 势力, 原版高亮色]——由 layout.json 的 place_highlights 生成。 */
@@ -33,7 +41,7 @@ const RAW: Array<[number, number, number, number, string, string]> = [
   [0, 1051.4, 432.3, 3, 'north', '#edb723'],  // 京畿
   [1, 466.9, 1052.5, 1, 'west', '#f798d3'],  // 巴蜀
   [2, 748.5, 1424.0, 0, 'south', '#4bffb5'],  // 广南
-  [3, 755.4, 795.0, 2, 'center', '#ffffff'],  // 荆北
+  [3, 755.4, 795.0, 2, 'center', '#d4b896'],  // 荆北（原版白色在纸面上看不出，改淡金）
   [4, 620.4, 415.4, 2, 'north', '#ffd4a9'],  // 山西
   [5, 1156.7, 1405.6, 1, 'south', '#ff7e09'],  // 广东
   [6, 1374.9, 404.8, 1, 'east', '#bbe3ff'],  // 山东

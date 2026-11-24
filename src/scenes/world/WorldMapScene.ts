@@ -10,13 +10,14 @@ import { services } from '../../app/services';
 import { setHover, setSelection, ui, type Screen } from '../../app/store';
 import { createPaperMaterial, fitPCSSLight, isPCSSPatched, type PaperLocals } from '../../render/paper';
 import { MapPanRig } from './MapPanRig';
-import { buildAdjacency, type Pt } from './outline';
+import { buildAdjacency, normalizeOutline, type Pt } from './outline';
+import { proceduralBase, voronoiCells } from './worldFallback';
 import { stateOf } from './pieceState';
-import { LAYER_DECOR, LAYER_PICK, mapToPlane, pieceFromImage, ProvincePiece, type MapXform } from './ProvincePiece';
+import { LAYER_DECOR, LAYER_PICK, mapToPlane, pieceFromImage, ProvincePiece, type MapXform, type PieceSource } from './ProvincePiece';
 import { Token } from './Token';
 import { TravelLine } from './TravelLine';
 import { planTravel, sampleTravel, type TravelPlan } from './travelTimeline';
-import { computeView, MAP_LAYOUT, PLACES, provinceOfRegion, stubRoutes, worldUi, type WorldMapView } from './worldData';
+import { computeView, contentFallback, MAP_LAYOUT, SKIP_ORIGINAL, PLACES, provinceOfRegion, stubRoutes, worldUi, type WorldMapView } from './worldData';
 
 export const MAP_WIDTH = 24;
 
@@ -93,7 +94,11 @@ export class WorldMapScene implements IScene {
 
   async preload(_assets: AssetCache, _signal: AbortSignal): Promise<void> {
     const urls = [MAP_LAYOUT.baseImage, ...PLACES.map((p) => p.image), ...MAP_LAYOUT.clouds.map((c) => c.image)];
-    const imgs = await Promise.all(urls.map(loadImage));
+    // 原版素材（仅本地 dev 有）→ content/ 里的替代图 → null（build 时程序化降级）
+    const imgs = await Promise.all(urls.map(async (u) => {
+      const alt = contentFallback(u);
+      return (SKIP_ORIGINAL ? null : await loadImage(u)) ?? (alt ? await loadImage(alt) : null);
+    }));
     urls.forEach((u, i) => this.images.set(u, imgs[i]));
     this.build();
   }
@@ -124,9 +129,12 @@ export class WorldMapScene implements IScene {
       createPaperMaterial({ color: MAP_LAYOUT.backdrop, cutout: false, doubleSided: false, fibre: 0.35 }));
     back.position.y = -0.02; back.receiveShadow = true; back.name = 'backdrop';
     s.add(back);
-    const baseImg = this.images.get(MAP_LAYOUT.baseImage);
+    // 任一省片缺掩码时，全部改用以省中心切出的 Voronoi 拼块（保证纸缝等宽、不混搭）
+    const masksOk = PLACES.every((p) => this.images.get(p.image));
+    const cells = masksOk ? null : voronoiCells(PLACES.map((p) => p.center), W, H);
+    const baseImg = this.images.get(MAP_LAYOUT.baseImage) ?? proceduralBase(W, H, cells ?? voronoiCells(PLACES.map((p) => p.center), W, H));
     let baseTex: Texture | null = null;
-    if (baseImg) {
+    {
       baseTex = new CanvasTexture(baseImg as unknown as HTMLCanvasElement);
       baseTex.colorSpace = SRGBColorSpace; baseTex.anisotropy = 8;
       const sheet = new Mesh(new PlaneGeometry(mw, mh).rotateX(-Math.PI / 2),
@@ -139,10 +147,11 @@ export class WorldMapScene implements IScene {
 
     const gap = MAP_WIDTH * 0.0018;
     const view = this.view.peek();
-    for (const p of PLACES) {
+    for (const [i, p] of PLACES.entries()) {
       const img = this.images.get(p.image);
-      if (!img) continue;
-      const src = pieceFromImage(img, p.center, this.xf);
+      const src: PieceSource = img && !cells
+        ? pieceFromImage(img, p.center, this.xf)
+        : { outline: normalizeOutline(cells![i].map(([x, y]) => mapToPlane(this.xf, x, y))), texture: null, imageRect: [0, 0, 1, 1] };
       if (baseTex) { src.texture?.dispose(); src.texture = baseTex; src.imageRect = [bx0, byTop, mw, mh]; src.sharedTexture = true; }
       const pv = view.provinces.find((v) => v.id === p.id)!;
       const piece = new ProvincePiece(p.id, src, gap, p.layerHeight, pv.baseColor, pv.accentColor);

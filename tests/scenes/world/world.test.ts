@@ -177,3 +177,14 @@ describe('world view (stub)', () => {
     expect(seen.size).toBe(PLACES.length);
   });
 });
+
+describe('fallback voronoi', () => {
+  it('cells tile the map rect: areas sum to W×H, each cell contains its seed', async () => {
+    const { voronoiCells } = await import('../../../src/scenes/world/worldFallback');
+    const seeds = PLACES.map((p) => p.center);
+    const cells = voronoiCells(seeds, 1820, 1600);
+    const total = cells.reduce((a, c) => a + Math.abs(signedArea(c)), 0);
+    expect(total).toBeCloseTo(1820 * 1600, 0);
+    cells.forEach((c, i) => expect(pointInPolygon(seeds[i], c)).toBe(true));
+  });
+});
