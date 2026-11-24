@@ -1,9 +1,10 @@
 import type { FighterStats, WeaponDef } from '../combat/types';
+import { SKILL_KEYS } from '../../data/types';
 
 /**
  * 角色数据模型（可直接 JSON 序列化进存档）。
  * 来源：旧/主要属性、docs/PLAN.md §3.1。
- * 物品/功法目前用本模块的临时接口；src/data 的 ItemDef / TechniqueDef 落地后再替换。
+ * 武器直接存 WeaponDef（src/data 的 WeaponItemDef 即是）；衣甲/饰品与功法加成经 fromData.ts 从 GameDB 适配。
  */
 
 // === 六维 ===
@@ -15,12 +16,8 @@ export type MainAttrs = Record<MainAttr, number>;
 
 // === 技艺 16 类 ===
 
-/** 音律 弈棋 诗书 绘画 术数 品鉴 锻造 制木 医术 毒术 织锦 巧匠 道法 佛学 厨艺 杂学 */
-export const LIFE_SKILLS = [
-  'music', 'chess', 'poetry', 'painting', 'math', 'appraisal',
-  'forging', 'woodwork', 'medicine', 'toxicology', 'weaving', 'jewelry',
-  'taoism', 'buddhism', 'cooking', 'eclectic',
-] as const;
+/** 音律 弈棋 诗书 绘画 术数 品鉴 锻造 制木 医术 毒术 织锦 巧匠 道法 佛学 厨艺 杂学（与 src/data 的 SKILL_KEYS 同源） */
+export const LIFE_SKILLS = SKILL_KEYS;
 export type LifeSkillType = typeof LIFE_SKILLS[number];
 
 // === 武学 ===
@@ -29,10 +26,12 @@ export interface LearnedTechnique {
   id: string;
   /** 修习度 0–100（%） */
   practice: number;
+  /** 是否装入运功栏：只有运功中的功法提供运功效果、可在战斗中施展。占格上限待 Loadout 落地 */
+  equipped?: boolean;
 }
 
 /**
- * 功法对角色的常驻加成（运功效果）。临时接口，等 src/data 的 TechniqueDef。
+ * 功法对角色的常驻加成（运功效果）。GameDB 的 TechniqueDef.equipBonus 经 techniqueLookupFromDB 转成此结构。
  * 加成按修习度线性折算（practice/100）。
  */
 export interface TechniqueBonus {

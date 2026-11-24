@@ -4,6 +4,8 @@ import { DEFAULT_SCHEMA, defaultsOf } from '../../app/ui/NewGameWizard';
 import { runHeadless } from '../combat/headless';
 import { DEFAULT_STATS } from '../combat/fighter';
 import type { WeaponDef } from '../combat/types';
+import { equipItem, gearFromItem, techniqueLookupFromDB, LIFE_SKILLS } from '../character';
+import { createStubDB, SKILL_KEYS, STUB_TECHNIQUES } from '../../data';
 
 const SWORD: WeaponDef = {
   id: 'sword', weaponClass: 'sword', baseSpeed: 6000, weight: 3,
@@ -40,6 +42,8 @@ describe('Character', () => {
     expect(c.learnTechnique('t1')).toBe(true);
     expect(c.learnTechnique('t1')).toBe(false);
     c.practiceTechnique('t1', 50);
+    expect(c.toFighterConfig().arts).toEqual([]);
+    expect(c.setTechniqueEquipped('t1', true)).toBe(true);
     const fc = c.toFighterConfig({ techniques: id => (id === 't1' ? { stats: { attackSpeed: 20 } } : undefined) });
     expect(fc.weapons.map(w => w.id)).toEqual(['sword']);
     expect(fc.arts).toEqual(['t1']);
@@ -56,5 +60,26 @@ describe('Character', () => {
     const b = Character.createNpc({ surname: '乙', given: '' });
     const st = runHeadless({ seed: 7n, fighters: [a.toFighterConfig(), b.toFighterConfig()] });
     expect(st.frame).toBeGreaterThan(0);
+  });
+
+  it('接 GameDB：武器条目装备、运功效果、技艺键一致', () => {
+    const db = createStubDB();
+    const c = Character.createPlayer({});
+    expect(Object.keys(c.data.lifeSkills)).toEqual([...SKILL_KEYS]);
+    expect(LIFE_SKILLS).toBe(SKILL_KEYS);
+    expect(equipItem(c, db.items.getAs('52201', 'weapon')!)).toBe(true);
+    expect(equipItem(c, db.items.getAs('82401', 'weapon')!)).toBe(true);
+    const tech = STUB_TECHNIQUES.find(t => t.equipBonus?.hitPower)!;
+    c.learnTechnique(tech.id, 100);
+    c.setTechniqueEquipped(tech.id, true);
+    const lookup = techniqueLookupFromDB(db);
+    const base = c.deriveStats();
+    const fc = c.toFighterConfig({ techniques: lookup });
+    expect(fc.weapons.map(w => w.id)).toEqual(['52201', '82401']);
+    expect(fc.stats!.hitPower).toBe(base.hitPower + tech.equipBonus!.hitPower!);
+    const st = runHeadless({ seed: 3n, arts: db.artRegistry(), fighters: [fc, Character.createNpc({ surname: '乙', given: '' }).toFighterConfig()] });
+    expect(st.frame).toBeGreaterThan(0);
+    const g = gearFromItem({ id: 'a', name: '布衣', type: 'armor', grade: 9, slot: 'body', toughness: 30, guard: { outer: 0, inner: 0 }, bonus: { protection: 5 } });
+    expect(g.stats).toEqual({ protection: 5, armorToughness: 30 });
   });
 });

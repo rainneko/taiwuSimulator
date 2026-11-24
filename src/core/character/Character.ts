@@ -136,6 +136,19 @@ export class Character {
     return true;
   }
 
+  /** 装入/卸下运功栏；未学会返回 false */
+  setTechniqueEquipped(id: string, equipped: boolean): boolean {
+    const t = this.getTechnique(id);
+    if (!t) return false;
+    t.equipped = equipped;
+    return true;
+  }
+
+  /** 运功栏中的功法 */
+  equippedTechniques(): LearnedTechnique[] {
+    return this.data.techniques.filter(t => t.equipped);
+  }
+
   forgetTechnique(id: string): boolean {
     const n = this.data.techniques.length;
     this.data.techniques = this.data.techniques.filter(t => t.id !== id);
@@ -171,7 +184,7 @@ export class Character {
     const perfBonus = zeroAttrs();
     for (const g of this.gear()) { addInto(bonus, g.attrs); addInto(perfBonus, g.attrPerf); }
     if (opts.techniques) {
-      for (const t of this.data.techniques) {
+      for (const t of this.equippedTechniques()) {
         const tb = opts.techniques(t.id);
         if (!tb) continue;
         const s = t.practice / 100;
@@ -206,7 +219,7 @@ export class Character {
     const flat = s as unknown as Record<string, number>;
     for (const g of this.gear()) addInto(flat, g.stats as Record<string, number> | undefined);
     if (opts.techniques) {
-      for (const t of this.data.techniques) {
+      for (const t of this.equippedTechniques()) {
         const tb = opts.techniques(t.id);
         if (tb?.stats) addInto(flat, tb.stats as Record<string, number>, t.practice / 100);
       }
@@ -229,7 +242,7 @@ export class Character {
       name: this.name,
       stats: this.deriveStats(opts),
       weapons: this.weapons().map(w => ({ ...w, wheel: w.wheel.slice() })),
-      arts: this.data.techniques.map(t => t.id),
+      arts: this.equippedTechniques().map(t => t.id),
     };
   }
 

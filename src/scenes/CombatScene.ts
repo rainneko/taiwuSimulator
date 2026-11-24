@@ -5,7 +5,7 @@ import type { IScene } from '../app/SceneManager';
 import { services } from '../app/services';
 import type { Screen } from '../app/store';
 import { initCombat, step, type CombatAction, type CombatConfig, type CombatEvent, type CombatState, type WeaponDef } from '../core/combat';
-import { BARE_HANDS } from '../core/character/Character';
+import { BARE_HANDS, techniqueLookupFromDB } from '../core/character';
 import { CombatRenderer } from '../render/combat';
 
 export interface CombatEnterParams {
@@ -20,7 +20,7 @@ function defaultConfig(): CombatConfig {
   const player = services.player;
   const db = services.db;
   const playerConfig = player
-    ? player.toFighterConfig()
+    ? player.toFighterConfig(db?.loaded ? { techniques: techniqueLookupFromDB(db) } : {})
     : { id: 'player', name: '太吾', weapons: [BARE_HANDS] };
   if (playerConfig.weapons.length === 0) playerConfig.weapons = [BARE_HANDS];
 
