@@ -13,8 +13,19 @@ data/wiki/images/
 !data/wiki/images_manifest.json
 !data/wiki/CRAWL_REPORT.md
 
-# Spine game assets (original game resources, not for distribution)
+# Game assets (original game resources, not for distribution)
 assets/spine/
+assets/map_terrain/
+assets/main-menu/
+assets/world-map/
+assets/art-source/
+assets/paper-ui/
+
+# 生成素材的原图与中间产物（人工出图，不进 git；原图存档在 assets/art-source/，见 M3-WO3 §6.1）
+assets/art-source/
+art/*/raw/
+art/*/work/
+art/*/review/
 
 # Node
 node_modules/

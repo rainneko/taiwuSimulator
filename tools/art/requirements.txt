@@ -1,0 +1,5 @@
+# 美术后处理工具链（tools/art/*.py）的依赖；Python ≥ 3.9
+# 本机已验证：Pillow 9.0.1（libwebp 1.2.2）、numpy 2.0.2
+# 安装：python3 -m pip install -r tools/art/requirements.txt（建议在虚拟环境里）
+numpy>=1.21
+Pillow>=9.0      # 需带 WebP 支持：python3 -c "from PIL import features; print(features.check('webp'))"

@@ -1,6 +1,7 @@
 # M3-WO1：纸片渲染工具箱与主界面骨架
 
-> 工单版本 v1.0 · 2026-11-23 · 执行会话撰写
+> 工单版本 v1.1 · 2026-11-23 · 执行会话撰写
+> v1.1 修订（§2.6）：图集改用 `ImageBitmapLoader` 且不预乘；`art-manifest.json` 条目扩展为三种，`AssetCache` 增加 `resolveTexture` / `resolveArrayLayer`。
 > 前置：M1-WO1 §1（Vite + TS + ESLint 分层的工程骨架）。不依赖战斗模块，可与 M1/M2 并行。
 > 预估：8–10 天
 > 验收：浏览器里能看到「纸模舞台」主菜单——各层纸片依次翻起、带软阴影、灯在纸后时透亮；点菜单项经 `fold` 翻页转场进入一个空的地点场景再翻回来；`/dev/paper.html` 画廊页能逐项演示材质、铰链、合批、阴影档位与四种转场。
@@ -472,9 +473,18 @@ export interface AtlasJson {
 }
 ```
 
-贴图是直通 alpha（非预乘）、`SRGBColorSpace`、开 mipmap、`anisotropy = 4`。
+贴图是直通 alpha（非预乘）、`SRGBColorSpace`、开 mipmap、`anisotropy = 4`。**图片用 `ImageBitmapLoader` 读，并 `setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: 'none' })`**——浏览器默认按预乘解码，透明像素的 RGB 会被清零，图集做的边缘颜色外扩就失效了，远处的牌会出黑边。
 
-**`artKey` 解析**：内容包提供 `art-manifest.json`（`artKey → { atlas, frame }`）。场景代码只认 `artKey`。解析不到时返回占位帧并 `console.warn` 一次（同一个 key 只报一次）。
+**`artKey` 解析**：内容包提供 `art-manifest.json`，条目有三种（v1.1，随 M3-WO3 §3.1 扩展）：
+
+```ts
+type ArtEntry =
+  | { atlas: string; frame: string }      // 图集帧
+  | { array: string; layer: number }      // 纹理数组的一层（地面底纸）
+  | { texture: string };                  // 单张纹理（道路、迷雾、遮罩、边框）
+```
+
+场景代码只认 `artKey`。解析不到时返回占位并 `console.warn` 一次（同一个 key 只报一次）。
 
 **占位牌**（`placeholder.ts`）：用 2D canvas 现画一张图集——每个缺失的 `artKey` 一帧：圆角矩形剪影，底色由 key 的哈希取色相（低饱和），中间印 key 的末段文字。开发期所有场景都靠它跑起来。
 
@@ -484,7 +494,9 @@ export interface AtlasJson {
 export class AssetCache {
   acquire(atlasId: string, signal?: AbortSignal): Promise<Atlas>;   // 引用计数 +1；并发请求合并
   release(atlasId: string): void;                                   // 计数归零后延迟 5s 再真正 dispose
-  resolve(artKey: string): { atlas: Atlas; frame: AtlasFrame };     // 含占位回退
+  resolve(artKey: string): { atlas: Atlas; frame: AtlasFrame };     // 图集帧；含占位回退
+  resolveTexture(artKey: string): Texture;                          // 单张纹理；缺失时回退 1×1 中性色
+  resolveArrayLayer(artKey: string): { texture: DataArrayTexture; layer: number } | null;   // 数组层；缺失返回 null，由调用方走纯色路径
   stats(): { atlases: number; textureBytes: number };               // 设置页与预算检查用
 }
 ```
