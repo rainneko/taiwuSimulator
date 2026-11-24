@@ -1,0 +1,625 @@
+{
+ "version": 1,
+ "generatedBy": "tools/art/pack_region.py",
+ "levelStep": 0.05,
+ "layers": true,
+ "houses": true,
+ "terrains": {
+  "plain": {
+   "layer": 0,
+   "stack": 60,
+   "density": [
+    0,
+    2
+   ],
+   "level": null,
+   "fillers": [
+    "filler.tuft.0",
+    "filler.tuft.1",
+    "filler.flowers.0",
+    "filler.flowers.1",
+    "filler.bush.0",
+    "filler.rock.0"
+   ],
+   "fillerCount": [
+    4,
+    7
+   ],
+   "pieces": [
+    "ground.piece.grass",
+    "ground.piece.dirt",
+    "ground.piece.pebbles"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.plain.0",
+    "terrain.standee.plain.1"
+   ],
+   "water": false
+  },
+  "lake": {
+   "layer": 1,
+   "stack": 20,
+   "density": [
+    0,
+    1
+   ],
+   "level": {
+    "edge": -1,
+    "step": 0,
+    "cap": -1
+   },
+   "fillers": [
+    "filler.reeds",
+    "filler.rock.0"
+   ],
+   "fillerCount": [
+    2,
+    4
+   ],
+   "pieces": [],
+   "pieceCount": [
+    0,
+    0
+   ],
+   "standees": [
+    "terrain.standee.lake.0",
+    "terrain.standee.lake.1"
+   ],
+   "water": true,
+   "shore": {
+    "fillers": [
+     "filler.reeds",
+     "filler.rock.0",
+     "filler.tuft.1"
+    ],
+    "count": [
+     1,
+     3
+    ],
+    "band": 0.12
+   }
+  },
+  "farmland": {
+   "layer": 2,
+   "stack": 50,
+   "density": [
+    0,
+    1
+   ],
+   "level": null,
+   "fillers": [
+    "filler.tuft.0",
+    "filler.flowers.0"
+   ],
+   "fillerCount": [
+    1,
+    3
+   ],
+   "pieces": [
+    "ground.piece.dirt"
+   ],
+   "pieceCount": [
+    0,
+    1
+   ],
+   "standees": [
+    "terrain.standee.farmland.0",
+    "terrain.standee.farmland.1"
+   ],
+   "water": false
+  },
+  "woods": {
+   "layer": 3,
+   "stack": 80,
+   "density": [
+    4,
+    6
+   ],
+   "level": null,
+   "fillers": [
+    "filler.bush.0",
+    "filler.fern",
+    "filler.mushrooms",
+    "filler.stump",
+    "filler.tuft.0",
+    "filler.flowers.0"
+   ],
+   "fillerCount": [
+    4,
+    7
+   ],
+   "pieces": [
+    "ground.piece.leaves",
+    "ground.piece.moss",
+    "ground.piece.roots",
+    "ground.piece.needles"
+   ],
+   "pieceCount": [
+    1,
+    3
+   ],
+   "standees": [
+    "terrain.standee.woods.0",
+    "terrain.standee.woods.1"
+   ],
+   "water": false
+  },
+  "jungle": {
+   "layer": 4,
+   "stack": 85,
+   "density": [
+    5,
+    7
+   ],
+   "level": null,
+   "fillers": [
+    "filler.fern",
+    "filler.bush.0",
+    "filler.mushrooms",
+    "filler.log"
+   ],
+   "fillerCount": [
+    4,
+    7
+   ],
+   "pieces": [
+    "ground.piece.leaves",
+    "ground.piece.moss",
+    "ground.piece.roots"
+   ],
+   "pieceCount": [
+    2,
+    3
+   ],
+   "standees": [
+    "terrain.standee.jungle.0",
+    "terrain.standee.jungle.1"
+   ],
+   "water": false
+  },
+  "garden": {
+   "layer": 5,
+   "stack": 60,
+   "density": [
+    2,
+    4
+   ],
+   "level": null,
+   "fillers": [
+    "filler.bush.0",
+    "filler.rock.1",
+    "filler.flowers.0"
+   ],
+   "fillerCount": [
+    3,
+    5
+   ],
+   "pieces": [
+    "ground.piece.pebbles"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.garden.0",
+    "terrain.standee.garden.1"
+   ],
+   "water": false
+  },
+  "mountain": {
+   "layer": 6,
+   "stack": 120,
+   "density": [
+    1,
+    2
+   ],
+   "level": {
+    "edge": 1,
+    "step": 1,
+    "cap": 3
+   },
+   "fillers": [
+    "filler.rock.1",
+    "filler.rock.0",
+    "filler.tuft.1",
+    "filler.thorn"
+   ],
+   "fillerCount": [
+    3,
+    5
+   ],
+   "pieces": [
+    "ground.piece.pebbles",
+    "ground.piece.cracks"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.mountain.0",
+    "terrain.standee.mountain.1"
+   ],
+   "water": false
+  },
+  "cave": {
+   "layer": 7,
+   "stack": 100,
+   "density": [
+    1,
+    2
+   ],
+   "level": {
+    "edge": 1,
+    "step": 0,
+    "cap": 1
+   },
+   "fillers": [
+    "filler.rock.1",
+    "filler.mushrooms"
+   ],
+   "fillerCount": [
+    2,
+    4
+   ],
+   "pieces": [
+    "ground.piece.pebbles",
+    "ground.piece.puddle"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.cave.0",
+    "terrain.standee.cave.1"
+   ],
+   "water": false
+  },
+  "stoneForest": {
+   "layer": 8,
+   "stack": 110,
+   "density": [
+    2,
+    4
+   ],
+   "level": {
+    "edge": 1,
+    "step": 0,
+    "cap": 1
+   },
+   "fillers": [
+    "filler.rock.1",
+    "filler.rock.0",
+    "filler.tuft.0"
+   ],
+   "fillerCount": [
+    2,
+    4
+   ],
+   "pieces": [
+    "ground.piece.pebbles"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.stoneForest.0",
+    "terrain.standee.stoneForest.1"
+   ],
+   "water": false
+  },
+  "hill": {
+   "layer": 9,
+   "stack": 90,
+   "density": [
+    2,
+    3
+   ],
+   "level": null,
+   "fillers": [
+    "filler.bush.0",
+    "filler.tuft.0",
+    "filler.tuft.1",
+    "filler.flowers.1",
+    "filler.rock.0"
+   ],
+   "fillerCount": [
+    4,
+    6
+   ],
+   "pieces": [
+    "ground.piece.grass",
+    "ground.piece.dirt"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.hill.0",
+    "terrain.standee.hill.1"
+   ],
+   "water": false
+  },
+  "vale": {
+   "layer": 10,
+   "stack": 60,
+   "density": [
+    2,
+    4
+   ],
+   "level": null,
+   "fillers": [
+    "filler.flowers.0",
+    "filler.flowers.1",
+    "filler.tuft.0"
+   ],
+   "fillerCount": [
+    5,
+    8
+   ],
+   "pieces": [
+    "ground.piece.grass"
+   ],
+   "pieceCount": [
+    2,
+    3
+   ],
+   "standees": [
+    "terrain.standee.vale.0",
+    "terrain.standee.vale.1"
+   ],
+   "water": false
+  },
+  "mulberry": {
+   "layer": 11,
+   "stack": 50,
+   "density": [
+    3,
+    4
+   ],
+   "level": null,
+   "fillers": [
+    "filler.tuft.0",
+    "filler.bush.0",
+    "filler.flowers.0"
+   ],
+   "fillerCount": [
+    2,
+    4
+   ],
+   "pieces": [
+    "ground.piece.leaves",
+    "ground.piece.dirt"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.mulberry.0",
+    "terrain.standee.mulberry.1"
+   ],
+   "water": false
+  },
+  "canyon": {
+   "layer": 12,
+   "stack": 100,
+   "density": [
+    1,
+    2
+   ],
+   "level": {
+    "edge": -1,
+    "step": 0,
+    "cap": -1
+   },
+   "fillers": [
+    "filler.rock.1",
+    "filler.thorn"
+   ],
+   "fillerCount": [
+    2,
+    4
+   ],
+   "pieces": [
+    "ground.piece.cracks",
+    "ground.piece.pebbles"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.canyon.0",
+    "terrain.standee.canyon.1"
+   ],
+   "water": false
+  },
+  "marsh": {
+   "layer": 13,
+   "stack": 30,
+   "density": [
+    1,
+    3
+   ],
+   "level": {
+    "edge": -0.5,
+    "step": 0,
+    "cap": -0.5
+   },
+   "fillers": [
+    "filler.reeds",
+    "filler.tuft.1",
+    "filler.log",
+    "filler.mushrooms"
+   ],
+   "fillerCount": [
+    4,
+    6
+   ],
+   "pieces": [
+    "ground.piece.puddle",
+    "ground.piece.moss"
+   ],
+   "pieceCount": [
+    2,
+    3
+   ],
+   "standees": [
+    "terrain.standee.marsh.0",
+    "terrain.standee.marsh.1"
+   ],
+   "water": false
+  },
+  "herbGarden": {
+   "layer": 14,
+   "stack": 50,
+   "density": [
+    1,
+    2
+   ],
+   "level": null,
+   "fillers": [
+    "filler.flowers.1",
+    "filler.tuft.0"
+   ],
+   "fillerCount": [
+    3,
+    5
+   ],
+   "pieces": [
+    "ground.piece.dirt"
+   ],
+   "pieceCount": [
+    1,
+    1
+   ],
+   "standees": [
+    "terrain.standee.herbGarden.0",
+    "terrain.standee.herbGarden.1"
+   ],
+   "water": false
+  },
+  "waste": {
+   "layer": 15,
+   "stack": 60,
+   "density": [
+    1,
+    2
+   ],
+   "level": null,
+   "fillers": [
+    "filler.rock.0",
+    "filler.rock.1",
+    "filler.thorn",
+    "filler.tuft.1"
+   ],
+   "fillerCount": [
+    3,
+    5
+   ],
+   "pieces": [
+    "ground.piece.cracks",
+    "ground.piece.dirt",
+    "ground.piece.pebbles"
+   ],
+   "pieceCount": [
+    1,
+    3
+   ],
+   "standees": [
+    "terrain.standee.waste.0",
+    "terrain.standee.waste.1"
+   ],
+   "water": false
+  },
+  "abyss": {
+   "layer": 16,
+   "stack": 10,
+   "density": [
+    1,
+    2
+   ],
+   "level": {
+    "edge": -1,
+    "step": -1,
+    "cap": -2
+   },
+   "fillers": [
+    "filler.rock.1"
+   ],
+   "fillerCount": [
+    2,
+    3
+   ],
+   "pieces": [
+    "ground.piece.cracks"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [
+    "terrain.standee.abyss.0",
+    "terrain.standee.abyss.1"
+   ],
+   "water": false
+  },
+  "settlement": {
+   "layer": 17,
+   "stack": 70,
+   "density": [
+    0,
+    0
+   ],
+   "level": null,
+   "fillers": [],
+   "fillerCount": [
+    0,
+    0
+   ],
+   "pieces": [
+    "ground.piece.dirt",
+    "ground.piece.pebbles"
+   ],
+   "pieceCount": [
+    1,
+    2
+   ],
+   "standees": [],
+   "water": false
+  }
+ },
+ "houseTypes": {
+  "cottage": [
+   "house.cottage.0",
+   "house.cottage.1",
+   "house.cottage.2"
+  ],
+  "tile": [
+   "house.tile.0",
+   "house.tile.1"
+  ],
+  "long": [
+   "house.long.0",
+   "house.long.1"
+  ],
+  "shop": [
+   "house.shop.0"
+  ],
+  "tower": [
+   "house.tower.0"
+  ],
+  "hall": [
+   "house.hall.0"
+  ]
+ }
+}

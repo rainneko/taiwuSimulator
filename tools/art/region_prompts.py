@@ -24,7 +24,7 @@ OUT = ROOT / "docs" / "art-prompts" / "region.md"
 LIST_OUT = ROOT / "tools" / "art" / "region-assets.json"
 
 # 工单 §1 的分类数量；改表时同步改这里和工单
-EXPECTED_COUNTS = {"A": 18, "B": 34, "C": 11, "D": 5, "E": 6, "F": 5, "H": 17, "I": 10, "J": 10}
+EXPECTED_COUNTS = {"A": 18, "B": 34, "C": 11, "D": 5, "E": 10, "F": 5, "H": 19, "I": 10, "J": 13, "K": 1}   # v1.4：E +4、H +2、J +3、K 云带 1
 
 # 图集 id（相对内容包的 art/ 目录，不带扩展名）与入库像素密度（每 1 格宽的像素数）
 ATLAS_TERRAIN = "region/region-terrain"
@@ -250,6 +250,9 @@ FILLERS = [
     ("thorn", "荆棘", "一丛带刺的低矮荆棘，枝条弯曲，挂着几颗小红果", 0.17, 1.4, True),
     ("bamboo", "嫩竹", "几株高低不齐的嫩竹，竹竿细直，顶端几片窄叶", 0.29, 0.6, True),
     ("herbs", "草药丛", "几株叶形各异的矮草本，其中一株开着淡紫色小花", 0.14, 1.3, True),
+    # v1.4（2026-11-24，执行主管批准 region_v1.4_changes.md）
+    ("rock.2", "孔石", "一块带孔洞的小湖石，孔洞边缘点着石绿苔点，石色灰青", 0.15, 1.1, False),
+    ("pine", "小松", "一株小松苗：细瘦的灰赭树干，两三团层层平展的针叶团，针叶是松墨与石绿", 0.26, 0.9, True),
 ]
 
 # 地面散件（v1.1，工单 §1.5）：平贴在地面上的薄纸件，按地形取池、随机旋转后贴在格内。(键, 标签, 描述, 边长[格])
@@ -269,17 +272,17 @@ GROUND_PIECES = [
 # 每种地形的填充池与每格张数，地面散件池与每格张数（工单 §3.6）
 DETAIL_POOLS = {
     # 地形: ((填充小件…), (填充 min, max), (地面散件…), (散件 min, max))
-    "plain": (("tuft.0", "tuft.1", "flowers.0", "flowers.1", "bush.0", "rock.0"), (4, 7), ("grass", "dirt", "pebbles"), (1, 2)),
+    "plain": (("tuft.0", "tuft.1", "flowers.0", "flowers.1", "bush.0", "rock.0", "pine"), (4, 7), ("grass", "dirt", "pebbles"), (1, 2)),
     "lake": (("reeds", "rock.0"), (2, 4), (), (0, 0)),
     "farmland": (("tuft.0", "flowers.0"), (1, 3), ("dirt",), (0, 1)),
     "woods": (("bush.0", "fern", "mushrooms", "stump", "tuft.0", "flowers.0"), (4, 7), ("leaves", "moss", "roots", "needles"), (1, 3)),
     "jungle": (("fern", "bush.0", "mushrooms", "log", "bamboo"), (4, 7), ("leaves", "moss", "roots"), (2, 3)),
-    "garden": (("bush.0", "bush.1", "rock.1", "flowers.0", "bamboo"), (3, 5), ("pebbles", "petals"), (1, 2)),
-    "mountain": (("rock.1", "rock.0", "tuft.1", "thorn"), (3, 5), ("pebbles", "cracks"), (1, 2)),
+    "garden": (("bush.0", "bush.1", "rock.1", "flowers.0", "bamboo", "rock.2"), (3, 5), ("pebbles", "petals"), (1, 2)),
+    "mountain": (("rock.1", "rock.0", "tuft.1", "thorn", "pine"), (3, 5), ("pebbles", "cracks"), (1, 2)),
     "cave": (("rock.1", "mushrooms", "deadwood"), (2, 4), ("pebbles", "puddle"), (1, 2)),
     "stoneForest": (("rock.1", "rock.0", "tuft.0"), (2, 4), ("pebbles",), (1, 2)),
-    "hill": (("bush.0", "tuft.0", "tuft.1", "flowers.1", "rock.0"), (4, 6), ("grass", "dirt"), (1, 2)),
-    "vale": (("flowers.0", "flowers.1", "bush.1", "tuft.0"), (5, 8), ("petals", "grass"), (2, 3)),
+    "hill": (("bush.0", "tuft.0", "tuft.1", "flowers.1", "rock.0", "pine"), (4, 6), ("grass", "dirt"), (1, 2)),
+    "vale": (("flowers.0", "flowers.1", "bush.1", "tuft.0", "rock.2"), (5, 8), ("petals", "grass"), (2, 3)),
     "mulberry": (("tuft.0", "bush.0", "flowers.0"), (2, 4), ("leaves", "dirt"), (1, 2)),
     "canyon": (("rock.1", "deadwood", "thorn"), (2, 4), ("cracks", "pebbles"), (1, 2)),
     "marsh": (("reeds", "tuft.1", "log", "mushrooms"), (4, 6), ("puddle", "moss"), (2, 3)),
@@ -354,6 +357,11 @@ PROPS = [
     ("loc.prop.tree", "前景件：路边树", "一棵树干歪斜的路边老树，树冠不大", 0.33, 0.9),
     ("loc.prop.fence", "前景件：木栅", "一段木栅栏，五六根木桩用两道横木连起", 0.2, 2.4),
     ("loc.prop.steps", "前景件：石阶", "一段三五级的宽石阶，两侧有矮石栏", 0.2, 1.8),
+    # v1.4（2026-11-24）
+    ("loc.prop.rack", "前景件：兵器架", "一座木制兵器架：两根立柱、两道横档，横档上斜靠着三四根长杆兵器，只画木杆和素铁头，不画刀光、不画血迹；木构灰赭", 0.3, 1.3),
+    ("loc.prop.dummy", "前景件：木人桩", "一根练功的木人桩：一根粗木桩向左右两侧和斜前方错落伸出三根短木臂，下方一条斜出的木腿，三根臂在剪影里都看得见，桩脚插在一块方形矮石墩里；木色灰赭", 0.3, 0.6),
+    ("loc.prop.stele", "前景件：龟趺碑", "一座龟趺石碑：石雕的龟形碑座驮着一块竖立的长方石碑，龟形碑座是石雕构件，简括成一块带龟首和龟甲纹的石座，碑面是平整的空白石面；石色青灰", 0.33, 0.7),
+    ("loc.prop.banner", "前景件：镖旗", "一根木旗杆挑着一面三角形的素色灰青旗，旗面是素色的空白布面，杆脚一个矮石墩", 0.35, 0.6),
 ]
 
 DECOR = [
@@ -379,8 +387,16 @@ DECOR = [
 # 用户 2026-11-24：纸盒房子（程序搭形 + 部件贴图）和手绘插画立牌风格不搭，改成一栋一栋单独画的立牌，
 # 按聚居配方一栋一栋摆进格里（preview_grid.place_houses）。纸盒方案的副本在 docs/shelved/house-boxes/。
 # houseKind 供配方选用：cottage 小屋、tile 瓦房、long 长屋、shop 二层木楼、tower 瞭望楼、hall 殿阁。
+# K 仙层（v1.4）：只放山岳 minLevel 层以上的格子（主峰附近），每地区至多 maxPerRegion 处；不随地形密度撒
+CLOUDS = [
+    # artKey, 标签, 描述, 高, 宽高比, minLevel, maxPerRegion
+    ("terrain.standee.cloud.0", "仙层：云带", "一段横长的如意纸云带：三四个如意云头首尾相接，云身是留白的纸，边缘一道很细的石青勾线，前后叠两层纸；云带最下缘沿一条水平线裁平", 0.3, 3.0, 2, 3),
+]
+
 HOUSE_CUE = ("这是一栋单独的房子，不是一组建筑：除上面写到的东西以外，周围不画院墙、篱笆、树木、杂物，也不画别的房子；"
              "门、窗画成关着的；门楣、匾额如果有，一律留空白，不写任何字。")
+GATE_CUE = ("这是单独的一座门，不是一组建筑：除上面写到的东西以外，周围不画院墙、树木、杂物，也不画别的房子；"
+            "开间之间、门洞里是镂空的，和背景同样处理（透明或品红），不要填实；额枋、门额一律留空白，不写任何字。")
 
 HOUSES = [
     # artKey, houseKind, 标签, 描述, 立起后的高度[格], 宽高比 w/h
@@ -393,6 +409,10 @@ HOUSES = [
     ("house.long.1", "long", "长屋 B", "一栋青灰瓦顶的长条仓房：木板墙，正面一扇宽大的双开木门", 0.31, 1.75),
     ("house.shop.0", "shop", "二层木楼", "一栋窄而高的二层木楼：灰瓦屋檐上下两层挑出，楼上一排格窗，楼下门前挂一盏素面灯笼", 0.45, 0.85),
     ("house.tower.0", "tower", "瞭望木楼", "一座原木搭的高脚瞭望楼：四根粗木柱撑着一间带斜顶的小木屋，柱间有交叉的斜撑和一架木梯", 0.5, 0.6),
+    # v1.4（2026-11-24）：客栈进镇、城的配方（shop 类）；牌坊、山门（gate 类）不进任何配方，摆放规则（压在道路入口上）由渲染侧定，没规则时不摆
+    ("house.shop.1", "shop", "客栈", "一栋两层的客栈：黛青瓦屋檐上下两层，楼上一排格窗，楼下一扇宽木门关着，门旁一根木杆挑着一面空白的长条酒旗；木构赭石色", 0.45, 0.9),
+    ("house.gate.0", "gate", "牌坊", "一座三间四柱的木牌坊：四根木柱，上面三座黛青瓦小屋顶，中间一座最高，额枋是素面木板；柱子是褪色的朱红（朱色只在柱上），柱脚各一个石鼓", 0.5, 1.4),
+    ("house.gate.1", "gate", "山门", "一座石砌山门：青灰条石砌的门墩，中间一个拱形门洞（门洞里是透明的镂空），门上一座黛青瓦歇山小顶，两侧各连一小段矮墙", 0.5, 1.5),
     ("house.hall.0", "hall", "殿阁", "一座重檐的殿阁：两层青灰瓦屋檐，檐角微微上翘，四根朱红色圆柱，下面一道青石台基与三级石阶", 0.55, 1.3),
 ]
 
@@ -539,6 +559,11 @@ QINGLV_AVOID = {'filler.mushrooms': '伞形的小蘑菇、红白斑点的毒蘑�
  'house.tile.0': '欧式农舍、木板小屋、谷仓、日式民居、窗内暖光',
  'house.tile.1': '欧式农舍、木板小屋、谷仓、日式民居、窗内暖光',
  'house.tower.0': '欧式农舍、木板小屋、谷仓、日式民居、窗内暖光',
+ 'house.shop.1': '欧式农舍、木板小屋、谷仓、日式民居、窗内暖光',
+ 'house.gate.0': '日式鸟居、西式拱门、凯旋门',
+ 'house.gate.1': '日式鸟居、西式拱门、城堡大门',
+ 'loc.prop.rack': '西洋剑、盾牌、盔甲',
+ 'loc.prop.stele': '西式墓碑、十字架',
  'loc.prop.fence': '白色栅栏、尖头木板栅栏',
  'loc.prop.lantern': '日式石灯笼',
  'loc.village.0': '避免：温馨的欧式农舍、谷仓、风车、草垛、白色栅栏、童话小镇、金黄色或橙色的茅草顶、秋天的橙黄色调、金色夕阳、窗内暖光、Q 版造型、日式鸟居与日式石灯笼。',
@@ -636,6 +661,10 @@ def assets(slots: list[dict]) -> list[dict]:
         items.append({"artKey": key, "section": "J", "label": f"房屋：{label}", "kind": "standee", "houseKind": hk,
                       "atlas": ATLAS_HOUSES, "atlasSize": ATLAS_SIZE[ATLAS_HOUSES], "pxPerUnit": PX_HOUSE,
                       "height": h, "aspect": a, "anchor": [0.5, 0.0]})
+    for key, label, _desc, h, a, lv, mx in CLOUDS:
+        items.append({"artKey": key, "section": "K", "label": label, "kind": "standee", "atlas": ATLAS_TERRAIN, "atlasSize": ATLAS_SIZE[ATLAS_TERRAIN],
+                      "pxPerUnit": PX_TERRAIN, "terrain": "mountain", "height": h, "aspect": a, "anchor": [0.5, 0.0],
+                      "minLevel": lv, "maxPerRegion": mx})
     for it in items:
         if it["artKey"] in PILOT:
             it["pilot"] = True
@@ -716,7 +745,11 @@ def build(slots: list[dict]) -> tuple[str, dict[str, int]]:
 
     out.append("\n## J. 单栋房屋（v1.3.1：一栋一张立牌，按聚居配方一栋一栋摆进格里；沿用风格基准 `terrain.standee.woods.0`）\n")
     for key, _hk, label, desc, _h, a in HOUSES:
-        item("J", key, f"房屋：{label}", "1024×1024，透明底", standee_prompt(desc, a, cue=HOUSE_CUE))
+        item("J", key, f"房屋：{label}", "1024×1024，透明底", standee_prompt(desc, a, cue=GATE_CUE if _hk == "gate" else HOUSE_CUE))
+
+    out.append("\n## K. 仙层（v1.4：只放山岳高层格子）\n")
+    for key, label, desc, _h, a, _lv, _mx in CLOUDS:
+        item("K", key, label, "1024×1024，透明底", standee_prompt(desc, a))
 
     if slots:
         out.append("\n## G. 专属地点（内容包槽位）\n")
@@ -805,7 +838,7 @@ def check(slots: list[dict]) -> list[str]:
     if unused := (fkeys | pkeys) - used:
         errs.append(f"这些件没有任何地形用到：{sorted(unused)}")
     kinds = {hk for _k, hk, *_r in HOUSES}
-    if kinds != {"cottage", "tile", "long", "shop", "tower", "hall"}:
+    if kinds - {"gate"} != {"cottage", "tile", "long", "shop", "tower", "hall"}:   # gate（牌坊、山门）不进配方
         errs.append(f"HOUSES 的 houseKind 须覆盖配方用到的 6 种，现为 {sorted(kinds)}")
     for key, _hk, _l, desc, h, _a in HOUSES:
         if bad := lint(desc, BANNED_ALL):

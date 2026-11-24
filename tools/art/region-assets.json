@@ -23,7 +23,8 @@
      "filler.flowers.0",
      "filler.flowers.1",
      "filler.bush.0",
-     "filler.rock.0"
+     "filler.rock.0",
+     "filler.pine"
     ],
     "fillerCount": [
      4,
@@ -213,7 +214,8 @@
      "filler.bush.1",
      "filler.rock.1",
      "filler.flowers.0",
-     "filler.bamboo"
+     "filler.bamboo",
+     "filler.rock.2"
     ],
     "fillerCount": [
      3,
@@ -248,7 +250,8 @@
      "filler.rock.1",
      "filler.rock.0",
      "filler.tuft.1",
-     "filler.thorn"
+     "filler.thorn",
+     "filler.pine"
     ],
     "fillerCount": [
      3,
@@ -351,7 +354,8 @@
      "filler.tuft.0",
      "filler.tuft.1",
      "filler.flowers.1",
-     "filler.rock.0"
+     "filler.rock.0",
+     "filler.pine"
     ],
     "fillerCount": [
      4,
@@ -386,7 +390,8 @@
      "filler.flowers.0",
      "filler.flowers.1",
      "filler.bush.1",
-     "filler.tuft.0"
+     "filler.tuft.0",
+     "filler.rock.2"
     ],
     "fillerCount": [
      5,
@@ -1734,6 +1739,82 @@
    "seasonal": false
   },
   {
+   "artKey": "loc.prop.rack",
+   "section": "E",
+   "label": "前景件：兵器架",
+   "kind": "standee",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.3,
+   "aspect": 1.3,
+   "anchor": [
+    0.5,
+    0.0
+   ],
+   "seasonal": false
+  },
+  {
+   "artKey": "loc.prop.dummy",
+   "section": "E",
+   "label": "前景件：木人桩",
+   "kind": "standee",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.3,
+   "aspect": 0.6,
+   "anchor": [
+    0.5,
+    0.0
+   ],
+   "seasonal": false
+  },
+  {
+   "artKey": "loc.prop.stele",
+   "section": "E",
+   "label": "前景件：龟趺碑",
+   "kind": "standee",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.33,
+   "aspect": 0.7,
+   "anchor": [
+    0.5,
+    0.0
+   ],
+   "seasonal": false
+  },
+  {
+   "artKey": "loc.prop.banner",
+   "section": "E",
+   "label": "前景件：镖旗",
+   "kind": "standee",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.35,
+   "aspect": 0.6,
+   "anchor": [
+    0.5,
+    0.0
+   ],
+   "seasonal": false
+  },
+  {
    "artKey": "region.road",
    "section": "F",
    "label": "道路纸带",
@@ -2113,6 +2194,44 @@
    "seasonal": true
   },
   {
+   "artKey": "filler.rock.2",
+   "section": "H",
+   "label": "填充小件：孔石",
+   "kind": "standee",
+   "atlas": "region/region-detail",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.15,
+   "aspect": 1.1,
+   "anchor": [
+    0.5,
+    0.0
+   ],
+   "seasonal": false
+  },
+  {
+   "artKey": "filler.pine",
+   "section": "H",
+   "label": "填充小件：小松",
+   "kind": "standee",
+   "atlas": "region/region-detail",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.26,
+   "aspect": 0.9,
+   "anchor": [
+    0.5,
+    0.0
+   ],
+   "seasonal": true
+  },
+  {
    "artKey": "ground.piece.dirt",
    "section": "I",
    "label": "地面散件：泥土斑",
@@ -2464,6 +2583,63 @@
    ]
   },
   {
+   "artKey": "house.shop.1",
+   "section": "J",
+   "label": "房屋：客栈",
+   "kind": "standee",
+   "houseKind": "shop",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.45,
+   "aspect": 0.9,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.gate.0",
+   "section": "J",
+   "label": "房屋：牌坊",
+   "kind": "standee",
+   "houseKind": "gate",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.5,
+   "aspect": 1.4,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "artKey": "house.gate.1",
+   "section": "J",
+   "label": "房屋：山门",
+   "kind": "standee",
+   "houseKind": "gate",
+   "atlas": "region/region-houses",
+   "atlasSize": [
+    2048,
+    1024
+   ],
+   "pxPerUnit": 768,
+   "height": 0.5,
+   "aspect": 1.5,
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
    "artKey": "house.hall.0",
    "section": "J",
    "label": "房屋：殿阁",
@@ -2481,6 +2657,27 @@
     0.5,
     0.0
    ]
+  },
+  {
+   "artKey": "terrain.standee.cloud.0",
+   "section": "K",
+   "label": "仙层：云带",
+   "kind": "standee",
+   "atlas": "region/region-terrain",
+   "atlasSize": [
+    4096,
+    2048
+   ],
+   "pxPerUnit": 768,
+   "terrain": "mountain",
+   "height": 0.3,
+   "aspect": 3.0,
+   "anchor": [
+    0.5,
+    0.0
+   ],
+   "minLevel": 2,
+   "maxPerRegion": 3
   }
  ]
 }

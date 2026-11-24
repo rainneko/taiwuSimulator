@@ -1,7 +1,7 @@
 # 已通过验收、可以打进运行时产物的 artKey（tools/art/pack_region.py 读）。
 # 新一批验收后把它的 artKey 加进来；原图按 pack_region.py 的目录优先级取（后验收的批次优先）。
 # 读原图的目录，按优先级（后验收的在前）。第四批验收后在最前面加 batch4。
-@sources batch3 ab batch2 batch1 trial
+@sources batch4 batch3 ab batch2 batch1 trial
 
 # trial（试点 2026-11-24 通过；林地底纸、山、松、村庄已被后来的版本取代）
 terrain.ground.plain
@@ -103,3 +103,5 @@ terrain.standee.waste.0
 terrain.standee.waste.1
 terrain.standee.abyss.0
 terrain.standee.abyss.1
+
+# batch4（青绿重出 20 张，2026-11-24 通过；artKey 都已在上面，靠 @sources 的 batch4 盖过旧图）

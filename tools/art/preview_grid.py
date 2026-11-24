@@ -85,8 +85,9 @@ WARP_AMP = 0.16
 WARP_WAVES = ((0.7, 2.6, 0.8), (0.3, 5.3, -1.9))      # (权重, 主方向角频率, 交叉项)
 SHALLOW_W, SHALLOW_K = 0.10, 0.30                       # 水面一侧沿岸的浅水带：宽、提亮量
 SHALLOW_COLOR = np.array([0.86, 0.90, 0.86], np.float32)
-LOC_POOL = {"city": ("wall", "lantern", "poles", "steps"), "sectSeat": ("poles", "steps", "lantern"),
-            "town": ("lantern", "tree", "fence"), "fort": ("fence", "poles"), "village": ("fence", "tree")}
+LOC_POOL = {"city": ("wall", "lantern", "poles", "steps", "stele"), "sectSeat": ("poles", "steps", "lantern", "rack", "dummy", "stele"),
+            "town": ("lantern", "tree", "fence", "banner"), "fort": ("fence", "poles", "rack", "banner"), "village": ("fence", "tree")}
+# v1.4：兵器架、木人桩进寨与门派驻地，龟趺碑进门派驻地与城，镖旗进镇与寨（region_v1.4_changes.md §1）
 
 
 def h32(*xs: int) -> int:
