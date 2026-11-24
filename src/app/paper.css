@@ -87,6 +87,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1d1813; fon
 @media (max-width: 900px) { .wm-card { top: auto; bottom: 0; right: 0; left: 0; width: auto; transform: translateY(120%); } }
 
 /* -- Region HUD -- */
-.region-hud { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; }
+.region-hud { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; align-items: center; }
+.region-info { pointer-events: auto; padding: 4px 12px; background: #fbf7ee; box-shadow: 2px 3px 0 rgba(60,40,20,.18); font: 14px/1.5 "Songti SC","STSong",serif; color: #3a2e22; }
 
 @media (prefers-reduced-motion: reduce) { .paper-lift, .main-menu { transition: none; } }

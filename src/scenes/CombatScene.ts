@@ -4,7 +4,8 @@ import type { ScenePointerEvent } from '../app/InputRouter';
 import type { IScene } from '../app/SceneManager';
 import { services } from '../app/services';
 import type { Screen } from '../app/store';
-import { initCombat, step, WEAPON_SPEED_CLASS, type CombatAction, type CombatConfig, type CombatEvent, type CombatState, type WeaponDef } from '../core/combat';
+import { initCombat, step, type CombatAction, type CombatConfig, type CombatEvent, type CombatState, type WeaponDef } from '../core/combat';
+import { BARE_HANDS } from '../core/character/Character';
 import { CombatRenderer } from '../render/combat';
 
 export interface CombatEnterParams {
@@ -15,23 +16,29 @@ export interface CombatEnterParams {
 
 const STEP = 1 / 60;
 
-const SWORD: WeaponDef = {
-  id: 'sword', weaponClass: 'sword', baseSpeed: WEAPON_SPEED_CLASS.normal, weight: 3,
-  rangeMin: 2.0, rangeMax: 6.0, power: 1000, wheel: ['chop', 'stab', 'flick', 'chop', 'stab', 'wild'],
-};
-const BLADE: WeaponDef = {
-  id: 'blade', weaponClass: 'blade', baseSpeed: WEAPON_SPEED_CLASS.normal, weight: 4,
-  rangeMin: 2.0, rangeMax: 5.5, power: 1100, wheel: ['chop', 'crash', 'lift', 'chop', 'crash', 'lift'],
-};
-
 function defaultConfig(): CombatConfig {
+  const player = services.player;
+  const db = services.db;
+  const playerConfig = player
+    ? player.toFighterConfig()
+    : { id: 'player', name: '太吾', weapons: [BARE_HANDS] };
+  if (playerConfig.weapons.length === 0) playerConfig.weapons = [BARE_HANDS];
+
+  const npcTemplate = db?.npcs?.find(n => n.id === 'bandit');
+  const enemyWeapons: WeaponDef[] = npcTemplate
+    ? npcTemplate.equipment.weapons.flatMap(wid => { const w = db.items.getAs(wid, 'weapon'); return w ? [w] : []; })
+    : [];
+  if (enemyWeapons.length === 0) enemyWeapons.push(BARE_HANDS);
+  const enemyAi = npcTemplate?.ai ?? { difficulty: 1 };
+
   return {
     seed: BigInt(Math.floor(Math.random() * 1e9)),
     fighters: [
-      { id: 'player', name: '太吾', weapons: [SWORD] },
-      { id: 'enemy', name: '山贼', weapons: [BLADE] },
+      playerConfig,
+      { id: 'enemy', name: npcTemplate?.name ?? '山贼', weapons: enemyWeapons },
     ],
-    ai: [{ difficulty: 2 }, { difficulty: 2 }],
+    arts: db?.loaded ? db.artRegistry() : undefined,
+    ai: [{ difficulty: 2 }, enemyAi],
   };
 }
 

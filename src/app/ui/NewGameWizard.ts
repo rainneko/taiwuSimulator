@@ -44,8 +44,21 @@ export function defaultsOf(fields: FieldSpec[]): NewGameParams {
   return o;
 }
 
-/** core 侧 StartNewGame 不在本工单：打印参数的桩。 */
-function dispatchStartNewGame(params: NewGameParams): void { console.info('[stub] StartNewGame', params); }
+import { Character } from '../../core/character';
+import { createWorldData, WorldClock, TurnManager } from '../../core/world';
+import { PLACES } from '../../scenes/world/worldData';
+
+function dispatchStartNewGame(params: NewGameParams): void {
+  const player = Character.createPlayer(params);
+  const world = createWorldData({
+    provinces: PLACES,
+    player: { provinceId: 'p0', regionId: 'p0.r0', cell: 24 },
+  });
+  const clock = new WorldClock(world);
+  const turns = new TurnManager(clock);
+  Object.assign(services, { player, world, clock, turns });
+  console.info('[NewGame]', player.name, world.time);
+}
 
 function Field(p: { f: FieldSpec; value: unknown; set: (v: unknown) => void }) {
   const { f, value, set } = p;
