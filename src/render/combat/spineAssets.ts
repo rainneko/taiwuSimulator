@@ -6,7 +6,7 @@ export interface SpineAssets {
 }
 
 /** 原版 Spine 数据所在目录（dev 服务器下项目根即站点根）。 */
-export const SPINE_BASE = '/assets/spine/';
+export const SPINE_BASE = `${import.meta.env.BASE_URL}assets/spine/`;
 
 /**
  * 加载原版骨骼。atlas 文件的 `size: 4096,4096` 原样保留（严禁改成 2048）。

@@ -7,7 +7,7 @@ export const DESIGN_H = 1080;
 /** 角色脚底所在高度（设计像素）。 */
 export const GROUND_Y = 210;
 
-export const BG_BASE = '/assets/spine/battle_backgrounds/battle_backgrounds/';
+export const BG_BASE = `${import.meta.env.BASE_URL}assets/spine/battle_backgrounds/battle_backgrounds/`;
 
 /** 21 套战斗背景（原版 battleback_0..20）。 */
 export const BG_SETS = [

@@ -41,7 +41,7 @@ export const WEAPON_ATTACHMENTS: Record<WeaponClass, { R: string; L: string }> =
 /** skill_animation_map.json 的 skills 表（只取用得到的字段）。 */
 export type SkillAnimTable = Record<string, { skill_anim?: string | null; stance?: string | null }>;
 
-export async function loadSkillAnimTable(url = '/assets/spine/mappings/skill_animation_map.json'): Promise<SkillAnimTable> {
+export async function loadSkillAnimTable(url = `${import.meta.env.BASE_URL}assets/spine/mappings/skill_animation_map.json`): Promise<SkillAnimTable> {
   const r = await fetch(url);
   return ((await r.json()) as { skills: SkillAnimTable }).skills;
 }
