@@ -84,8 +84,10 @@ export class RegionCamera {
     return MathUtils.clamp((far - this.dist) / Math.max(1e-3, far - near), 0, 1);
   }
 
-  groundAt(ndc: Vector2, out = new Vector3()): Vector3 | null {
+  /** NDC → 与 y = h 平面的交点。 */
+  groundAt(ndc: Vector2, out = new Vector3(), h = 0): Vector3 | null {
     this.ray.setFromCamera(ndc, this.camera);
+    this.plane.constant = -h;
     return this.ray.ray.intersectPlane(this.plane, out);
   }
 

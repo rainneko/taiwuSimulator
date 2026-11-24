@@ -5,3 +5,7 @@ export * from './RegionCamera';
 export * from './pathfinding';
 export * from './regionData';
 export * from './terrain';
+export * from './levels';
+export * from './TerrainLayers';
+export * from './dressing';
+export * from './warp';

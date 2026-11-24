@@ -220,10 +220,7 @@ export const GROUND_ART: Record<string, GroundArt> = {
   ]
  },
  "hill": {
-  "density": [
-   1,
-   3
-  ],
+  "density": [2, 3],
   "fillers": [
    "filler.bush.0",
    "filler.tuft.0",

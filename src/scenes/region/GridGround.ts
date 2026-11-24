@@ -1,9 +1,11 @@
 import {
-  DataTexture, Mesh, Vector4, MeshLambertMaterial, NearestFilter, PlaneGeometry, RGBAFormat, Texture, UnsignedByteType,
+  BufferGeometry, DataTexture, Mesh, Vector4, MeshLambertMaterial, NearestFilter, PlaneGeometry, RedFormat, RGBAFormat, Texture,
+  UnsignedByteType, Float32BufferAttribute,
 } from 'three';
 import { createPaperMaterial, type PaperShader } from '../../render/paper';
 import { GROUND_TYPES, MAX_VARIANTS, STACK, WATER } from './terrain';
 import { WARP_GLSL, type WarpPhase } from './warp';
+import { encodeLevel } from './levels';
 
 /** tTerrain.B 的高亮标志位。 */
 export const enum Hl { Hover = 1, Selected = 2, Path = 4, PathIllegal = 8, Danger = 16, Reachable = 32 }
@@ -13,8 +15,11 @@ export const enum Hl { Hover = 1, Selected = 2, Path = 4, PathIllegal = 8, Dange
  * tTerrain（N×N RGBA8）：R = 地面类型，G = 图集行（变体），B = 高亮标志，A = 逐格明暗。
  */
 export class GridGround {
-  readonly mesh: Mesh<PlaneGeometry, MeshLambertMaterial>;
+  readonly mesh: Mesh<BufferGeometry, MeshLambertMaterial>;
   readonly tTerrain: DataTexture;
+  /** 格的层号（N×N R8，最近邻）：r = (level + 2) × 2。 */
+  readonly tLevel: DataTexture;
+  private levelData: Uint8Array;
   private data: Uint8Array;
   private dirty = false;
   private uniforms = {
@@ -25,6 +30,7 @@ export class GridGround {
     uWarpPhase: { value: new Vector4() },
     uStack: { value: STACK.map((v) => v / 255) },
     uWater: { value: WATER.map((w) => (w ? 1 : 0)) },
+    tLevel: { value: null as unknown as Texture },
   };
 
   constructor(readonly n: number) {
@@ -34,18 +40,34 @@ export class GridGround {
     this.tTerrain.needsUpdate = true;
     this.uniforms.tTerrain.value = this.tTerrain;
     this.uniforms.uGridN.value = n;
+    this.levelData = new Uint8Array(n * n).fill(encodeLevel(0));
+    this.tLevel = new DataTexture(this.levelData, n, n, RedFormat, UnsignedByteType);
+    this.tLevel.magFilter = this.tLevel.minFilter = NearestFilter;
+    this.tLevel.needsUpdate = true;
+    this.uniforms.tLevel.value = this.tLevel;
 
     const u = this.uniforms;
     const mat = createPaperMaterial({
       color: 0xffffff, doubleSided: false, cutout: false, fibre: 0.16,
       extend: { cacheKey: 'regionGround', apply: (s: PaperShader) => patchGround(s, u) },
     });
-    const geo = new PlaneGeometry(n, n);
+    const geo: BufferGeometry = new PlaneGeometry(n, n);
     geo.rotateX(-Math.PI / 2);
     geo.translate(n / 2, 0, n / 2);
+    geo.setAttribute('aWall', new Float32BufferAttribute(new Float32Array(geo.attributes.position.count * 2), 2));
     this.mesh = new Mesh(geo, mat);
+    this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.name = 'GridGround';
+  }
+
+  /** 换成纸层几何（TerrainLayers.buildLayerGeometry）。 */
+  setGeometry(geo: BufferGeometry): void { this.mesh.geometry.dispose(); this.mesh.geometry = geo; }
+
+  /** 写每格层号（flat 时全 0）。 */
+  setLevels(level: ArrayLike<number>): void {
+    for (let i = 0; i < this.n * this.n; i++) this.levelData[i] = encodeLevel(level[i]);
+    this.tLevel.needsUpdate = true;
   }
 
   setWarpPhase(p: WarpPhase): void { this.uniforms.uWarpPhase.value.set(p[0], p[1], p[2], p[3]); }
@@ -83,14 +105,14 @@ export class GridGround {
   /** 每帧末调用一次：有改动才上传。 */
   flush(): void { if (this.dirty) { this.tTerrain.needsUpdate = true; this.dirty = false; } }
 
-  dispose(): void { this.mesh.geometry.dispose(); this.mesh.material.dispose(); this.tTerrain.dispose(); }
+  dispose(): void { this.mesh.geometry.dispose(); this.mesh.material.dispose(); this.tTerrain.dispose(); this.tLevel.dispose(); }
 }
 
 function patchGround(s: PaperShader, u: Record<string, { value: unknown }>): void {
   Object.assign(s.uniforms, u);
   s.vertexShader = s.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec2 vGridUv;')
-    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGridUv = ( modelMatrix * vec4( transformed, 1.0 ) ).xz;');
+    .replace('#include <common>', '#include <common>\nvarying vec2 vGridUv;\nattribute vec2 aWall;\nvarying vec2 vWall;\nvarying vec3 vWallN;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGridUv = ( modelMatrix * vec4( transformed, 1.0 ) ).xz;\nvWall = aWall;\nvWallN = normal;');
   s.fragmentShader = s.fragmentShader
     .replace('#include <common>', /* glsl */ `#include <common>
 varying vec2 vGridUv;
@@ -100,10 +122,18 @@ uniform float uGridN;
 uniform float uHasAtlas;
 uniform float uStack[ ${GROUND_TYPES} ];
 uniform float uWater[ ${GROUND_TYPES} ];
+uniform highp sampler2D tLevel;
+varying vec2 vWall;
+varying vec3 vWallN;
+float gLevel( ivec2 c ) { return texelFetch( tLevel, clamp( c, ivec2( 0 ), ivec2( int( uGridN ) - 1 ) ), 0 ).r; }
 ${WARP_GLSL}
 vec4 gCell( ivec2 c ) { return texelFetch( tTerrain, clamp( c, ivec2( 0 ), ivec2( int( uGridN ) - 1 ) ), 0 ); }
 int gId( vec4 t ) { return int( t.r * 255.0 + 0.5 ); }`)
-    .replace('#include <alphatest_fragment>', /* glsl */ `{
+    .replace('#include <alphatest_fragment>', /* glsl */ `if ( vWall.x > 0.5 ) {
+	// 侧壁：纸芯白，朝光程度 0.80 + 0.20·max(0, n·L)，下半截再压暗一成
+	float ndl = max( 0.0, dot( normalize( vWallN ), normalize( vec3( -6.0, 12.0, 4.0 ) ) ) );
+	diffuseColor.rgb *= vec3( 0.96, 0.94, 0.89 ) * ( 0.80 + 0.20 * ndl ) * mix( 0.9, 1.0, step( 0.5, vWall.y ) );
+} else {
 	vec2 g = vGridUv;
 	// ── 这一点画成哪一格：扭曲坐标（交界弯曲）；底纸按原坐标取，不变形 ──
 	vec2 gw = g + gWarp( g );
@@ -133,6 +163,9 @@ int gId( vec4 t ) { return int( t.r * 255.0 + 0.5 ); }`)
 		int nid = gId( gCell( nc ) );
 		if ( nid == id ) continue;
 		float d = dist[ k ];
+		if ( water && uWater[ nid ] < 0.5 ) shore = max( shore, 1.0 - smoothstep( 0.0, 0.10, d ) );
+		// 有层差的交界由真实侧壁代替：只有两格 tLevel 相同才画撕边与接触阴影
+		if ( abs( gLevel( nc ) - gLevel( cell ) ) > 0.001 ) continue;
 		float wob = 0.012 * sin( along[ k ] * 23.0 + float( k * 7 + id ) ) + 0.008 * sin( along[ k ] * 57.0 + float( id ) * 1.3 );
 		float e = d - 0.035 - wob;
 		tear = min( tear, smoothstep( -0.006, 0.004, e ) );
@@ -141,7 +174,6 @@ int gId( vec4 t ) { return int( t.r * 255.0 + 0.5 ); }`)
 			float dir = ( k == 0 || k == 3 ) ? 1.0 : 0.4;
 			shade = max( shade, ( 1.0 - smoothstep( 0.0, 0.06, e ) ) * dir );
 		}
-		if ( water && uWater[ nid ] < 0.5 ) shore = max( shore, 1.0 - smoothstep( 0.0, 0.10, d ) );
 	}
 	vec3 col = mix( base, vec3( 0.86, 0.90, 0.86 ), shore * 0.30 );
 	col = mix( col, vec3( 0.97, 0.95, 0.9 ), lip * step( 0.5, tear ) * 0.55 );

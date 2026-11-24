@@ -2,7 +2,7 @@ import { ACESFilmicToneMapping, SRGBColorSpace, Vector3, WebGLRenderer } from 't
 import { AssetCache } from '../app/AssetCache';
 import { InputRouter } from '../app/InputRouter';
 import { SceneManager } from '../app/SceneManager';
-import { makeSampleRegion, RegionScene, type CellInfo } from '../scenes/region';
+import { layerConfig, makeSampleRegion, RegionScene, type CellInfo } from '../scenes/region';
 
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
 const renderer = new WebGLRenderer({ canvas, antialias: true });
@@ -34,6 +34,12 @@ let seed = 7;
 const regen = () => scenes.goto('region', { region: makeSampleRegion(Number(size.value), seed++) }, { style: 'fold' });
 document.getElementById('regen')!.onclick = regen;
 size.onchange = regen;
+const layersEl = document.getElementById('layers') as HTMLInputElement, stepEl = document.getElementById('step') as HTMLSelectElement;
+const rebuild = () => {
+  layerConfig.enabled = layersEl.checked; layerConfig.step = Number(stepEl.value);
+  if (region.region) void scenes.goto('region', { region: region.region }, { style: 'fold' });
+};
+layersEl.onchange = rebuild; stepEl.onchange = rebuild;
 for (const z of [0, 1, 2]) document.getElementById(`z${z}`)!.onclick = () => region.rig.setZoom(z);
 document.getElementById('follow')!.onclick = () => { region.onKey(new KeyboardEvent('keydown', { key: 'f' })); };
 

@@ -5,13 +5,15 @@ import {
 import type { AssetCache } from '../../app/AssetCache';
 import type { ScenePointerEvent } from '../../app/InputRouter';
 import type { IScene, NdcRect } from '../../app/SceneManager';
-import type { Screen } from '../../app/store';
+import { ui, type Screen } from '../../app/store';
 import { createPaperMaterial, makeCardGeometry, PaperBatch, PaperCard, type Atlas } from '../../render/paper';
 import { HingeState } from '../../render/paper/hinge';
 import { DETAIL_PER_CELL, dressRegion, LOCATION_SIZE, MAX_MAIN, type Placement } from './dressing';
 import { makePlaceholderAtlas } from './placeholderArt';
 import { Visibility } from './Visibility';
-import { warpPhase } from './warp';
+import { warpPhase, type WarpPhase } from './warp';
+import { awayFromLevelEdge, heightAt, layerConfig, makeLevelGrid, type LevelGrid } from './levels';
+import { buildLayerGeometry } from './TerrainLayers';
 import { buildGroundAtlas } from './GroundAtlas';
 import { GridGround, Hl } from './GridGround';
 import { findPath, pathCost } from './pathfinding';
@@ -72,6 +74,11 @@ export class RegionScene implements IScene {
   private walk: { path: number[]; i: number; t: number; queued: number | null } | null = null;
   private tokenPos = new Vector3();
   private intro = 0;
+  /** v1.3 纸层：层号网格与扭曲相位（flat 时层号全 0）。 */
+  levels: LevelGrid | null = null;
+  private phase: WarpPhase = [0, 0, 0, 0];
+  private maxLevel = 0;
+  private maxLevelAbs = 0;
   private loader = new TextureLoader();
 
   constructor() {
@@ -230,6 +237,11 @@ export class RegionScene implements IScene {
     return out.set((cell % n) + 0.5, 0, ((cell / n) | 0) + 0.5);
   }
 
+  /** 世界 (x, z) 处的地面高度（棋子、立牌、道路、迷雾都按它抬高）。 */
+  heightAt(x: number, z: number): number {
+    return this.levels && this.maxLevelAbs > 0 ? heightAt(this.levels, x, z, this.phase, layerConfig.step) : 0;
+  }
+
   // ── 内部 ──
   private build(r: RegionData): void {
     this.clear();
@@ -241,8 +253,16 @@ export class RegionScene implements IScene {
     this.root.add(g.mesh);
     this.playerCell = r.playerCell;
     this.cellCenter(r.playerCell, this.tokenPos);
-    const phase = warpPhase(r.seed ?? 0);
+    const phase = this.phase = warpPhase(r.seed ?? 0);
     g.setWarpPhase(phase);
+    // 地形纸层：low 画质 / 开关关 → 层号全 0、不建侧壁（= v1.2 平面）
+    const layered = layerConfig.enabled && ui.quality.peek() !== 'low';
+    const lv = this.levels = makeLevelGrid(r, layered);
+    g.setLevels(lv.level);
+    this.maxLevel = Math.max(0, ...lv.level);
+    this.maxLevelAbs = Math.max(0, ...Array.from(lv.level, Math.abs));
+    if (layered) g.setGeometry(buildLayerGeometry(lv, phase, layerConfig.step).geometry);
+    this.tokenPos.y = this.heightAt(this.tokenPos.x, this.tokenPos.z);
     this.vis = new Visibility(n);
     this.vis.attach(g.mesh.material, 'ground');
     this.vis.setCenter(r.playerCell, true);
@@ -256,7 +276,7 @@ export class RegionScene implements IScene {
     for (const loc of r.locations) {
       const card = this.makeStandee(loc);
       const c = this.cellCenter(loc.cell);
-      card.position.set(c.x, 0.001, c.z - 0.2);
+      card.position.set(c.x, 0.001 + this.heightAt(c.x, c.z - 0.2), c.z - 0.2);
       this.vis.attach(card.material, 'loc');
       const d = Math.hypot(c.x - this.tokenPos.x, c.z - this.tokenPos.z);
       card.rise(0.25 + d * 0.06);
@@ -274,7 +294,9 @@ export class RegionScene implements IScene {
   /** 三层布置：主体立牌（terrainBatch）+ 填充小件 / 地面散件（detailBatch）。 */
   private buildDressing(r: RegionData, phase: ReturnType<typeof warpPhase>): void {
     if (!this.art || !this.vis) return;
-    const n = r.size, places = dressRegion(r, phase);
+    const lv = this.levels;
+    const accept = this.maxLevelAbs > 0 && lv ? (x: number, z: number) => awayFromLevelEdge(lv, x, z, phase) : undefined;
+    const n = r.size, places = dressRegion(r, phase, accept);
     const tb = this.terrainBatch = new PaperBatch(this.art, { cards: MAX_MAIN * n * n + 64, frames: 40 });
     const db = this.detailBatch = new PaperBatch(this.art, { cards: DETAIL_PER_CELL * n * n, frames: 40 });
     this.vis.attach(tb.material, 'batch');
@@ -286,7 +308,7 @@ export class RegionScene implements IScene {
     const delayOf = (p: Placement) => 0.2 + Math.hypot(p.x - this.tokenPos.x, p.z - this.tokenPos.z) * 0.05;
     for (const p of places) {
       if (!known.has(p.artKey)) continue;
-      pos.set(p.x, p.layer === 'flat' ? 0.002 : 0.001, p.z);
+      pos.set(p.x, (p.layer === 'flat' ? 0.002 : 0.001) + this.heightAt(p.x, p.z), p.z);
       tint.setScalar(p.tint);
       if (p.layer === 'main') {
         const h = tb.add({ frame: p.artKey, position: pos, yaw: p.yaw, scale: p.scale, tint, startState: HingeState.FLAT });
@@ -319,7 +341,7 @@ export class RegionScene implements IScene {
   /** 阴影相机跟随可视范围（WO3 §3.11 简化版）：外扩 2 格，按纹素对齐。 */
   private fitShadow(): void {
     const cells = this.rig.cellsFor(this.rig.zoomLevel);
-    const half = cells * 0.5 + 2 + 1.2;            // 外扩 2 格 + maxCasterHeight
+    const half = cells * 0.5 + 2 + 1.2 + this.maxLevel * layerConfig.step;   // 外扩 2 格 + maxCasterHeight（含最高层）
     const sc = this.sun.shadow.camera, size = this.sun.shadow.mapSize.x;
     if (sc.right !== half) { sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.near = 0.5; sc.far = 60; sc.updateProjectionMatrix(); }
     const texel = (half * 2) / size, t = this.rig.target;
@@ -356,12 +378,13 @@ export class RegionScene implements IScene {
     const a = this.cellCenter(w.path[w.i]), b = this.cellCenter(w.path[w.i + 1]);
     const t = Math.min(1, w.t);
     this.tokenPos.lerpVectors(a, b, t);
-    this.tokenPos.y = Math.sin(t * Math.PI) * HOP_ARC;
+    const ha = this.heightAt(a.x, a.z), hb = this.heightAt(b.x, b.z);
+    this.tokenPos.y = ha + (hb - ha) * t + Math.sin(t * Math.PI) * HOP_ARC;
     if (w.t < 1) return;
     // 落地一格
     w.i++; w.t = 0;
     this.playerCell = w.path[w.i];
-    this.tokenPos.y = 0;
+    this.tokenPos.y = this.heightAt(this.tokenPos.x, this.tokenPos.z);
     this.ground?.setFlag(this.playerCell, Hl.Path, false);
     this.token?.nudge(-2.5);
     this.vis?.setCenter(this.playerCell);
@@ -377,6 +400,11 @@ export class RegionScene implements IScene {
     if (!this.region) return -1;
     const p = this.rig.groundAt(e.ndc);
     if (!p) return -1;
+    // 拾取高度修正：查交点层高 h，再与 y = h 求交（迭代两次）
+    for (let k = 0; k < 2 && this.levels; k++) {
+      const h = this.heightAt(p.x, p.z);
+      if (!this.rig.groundAt(e.ndc, p, h)) return -1;
+    }
     const n = this.region.size, x = Math.floor(p.x), y = Math.floor(p.z);
     return x < 0 || y < 0 || x >= n || y >= n ? -1 : y * n + x;
   }

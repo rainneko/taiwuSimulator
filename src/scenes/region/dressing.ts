@@ -30,7 +30,9 @@ export const DETAIL_PER_CELL = 11;
 
 const ri = (r: () => number, [a, b]: [number, number]) => a + Math.floor(r() * (b - a + 1));
 
-export function dressRegion(region: RegionData, phase: WarpPhase = warpPhase(region.seed ?? 0)): Placement[] {
+/** accept：额外的落点约束（v1.3：离层边界 ≥ LEVEL_EDGE_GAP）。 */
+export function dressRegion(region: RegionData, phase: WarpPhase = warpPhase(region.seed ?? 0),
+  accept: (x: number, z: number) => boolean = () => true): Placement[] {
   const n = region.size, out: Placement[] = [];
   const locAt = new Map(region.locations.map((l) => [l.cell, l]));
   const owner = (x: number, z: number) => ownerCellAt(x, z, n, phase);
@@ -44,7 +46,7 @@ export function dressRegion(region: RegionData, phase: WarpPhase = warpPhase(reg
     const art = GROUND_ART[loc ? 'settlement' : key];
     if (!art) continue;
     const isWater = WATER[t];
-    const ownsPoint = (x: number, z: number) => owner(x, z) === cell;
+    const ownsPoint = (x: number, z: number) => owner(x, z) === cell && accept(x, z);
 
     // ── 主体立牌 ──
     const mains: Array<[number, number]> = [];
@@ -129,8 +131,9 @@ export function dressRegion(region: RegionData, phase: WarpPhase = warpPhase(reg
       for (let i = 0; i < want; i++) {
         const k = art.pieces[(r() * art.pieces.length) | 0], side = FRAMES[k]?.[0] ?? 0.4;
         const s = 0.8 + r() * 0.4, m = Math.max(0, 0.5 - 0.35 * side * s);
-        out.push({ cell, layer: 'flat', artKey: k, x: x0 + (r() - 0.5) * 2 * m, z: z0 + (r() - 0.5) * 2 * m,
-          scale: s, yaw: r() * Math.PI * 2, tint: 1 });
+        const fx = x0 + (r() - 0.5) * 2 * m, fz = z0 + (r() - 0.5) * 2 * m;
+        if (!accept(fx, fz)) continue;
+        out.push({ cell, layer: 'flat', artKey: k, x: fx, z: fz, scale: s, yaw: r() * Math.PI * 2, tint: 1 });
       }
     }
   }
