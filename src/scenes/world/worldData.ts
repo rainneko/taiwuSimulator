@@ -25,8 +25,8 @@ export interface MapLayoutLite {
   palette: { faction: Record<string, string>; goodwillRamp: [string, string]; idle: string; lockedTint: string };
 }
 
-const WM = '/assets/world-map/world_map/';
-const CLOUD = '/assets/map_terrain/map_terrain/worldmap_overlays/';
+const WM = `${import.meta.env.BASE_URL}assets/world-map/world_map/`;
+const CLOUD = `${import.meta.env.BASE_URL}assets/map_terrain/map_terrain/worldmap_overlays/`;
 
 /** [MapPlace 编号, 中心 x, 中心 y, 档高, 势力, 原版高亮色]——由 layout.json 的 place_highlights 生成。 */
 const RAW: Array<[number, number, number, number, string, string]> = [
