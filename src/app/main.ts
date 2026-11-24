@@ -1,7 +1,10 @@
 import { render, h } from 'preact';
 import { WebGLRenderer, SRGBColorSpace } from 'three';
 import { makeFibreData } from '../render/paper';
+import { CombatScene } from '../scenes/CombatScene';
 import { MenuScene } from '../scenes/MenuScene';
+import { RegionScene } from '../scenes/region';
+import { WorldMapScene } from '../scenes/world/WorldMapScene';
 import { AssetCache } from './AssetCache';
 import { InputRouter } from './InputRouter';
 import { LabelProjector } from './LabelProjector';
@@ -64,6 +67,9 @@ async function boot(): Promise<void> {
   render(h(LabelLayer, null), el('labels'));
 
   scenes.register('mainMenu', () => new MenuScene(), ['newGame']);
+  scenes.register('worldMap', () => new WorldMapScene());
+  scenes.register('region', () => new RegionScene());
+  scenes.register('combat', () => new CombatScene());
   const loop = new RenderLoop(renderer, scenes, portraits, labels, input);
   loop.onContextRestored = () => { assets.rebuild(); void scenes.reenter(); };
   loop.start();

@@ -59,7 +59,7 @@ function Toast() {
 
 export function WorldMapHud() {
   if (ui.screen.value !== 'worldMap') return null;
-  return h('div', { class: 'wm-hud' },
+  return h('div', { class: 'wm-hud passthrough' },
     h('div', { class: 'wm-top paper' }, `${t('map.ap')} `, h('b', null, worldUi.ap.value)),
     h(LayerToggle, null), h(ZoomControls, null), h(ProvinceCard, null), h(Toast, null),
     h('button', { class: 'wm-clear', hidden: true, onClick: () => setSelection(null) }));

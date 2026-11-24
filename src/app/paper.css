@@ -57,4 +57,36 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1d1813; fon
 .loading .box { padding: var(--sp-4) var(--sp-5); display: flex; gap: var(--sp-3); align-items: center; }
 .label { white-space: nowrap; font-size: .95rem; color: var(--ink-0); text-shadow: 0 0 3px var(--paper-0); }
 
+/* -- World Map HUD -- */
+.wm-hud { position: absolute; inset: 0; pointer-events: none; font: 14px/1.5 "Songti SC", "STSong", serif; color: #3a2e22; }
+.wm-hud button { font: inherit; cursor: pointer; }
+.wm-hud > * { pointer-events: auto; }
+.wm-top { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 4px 16px; background: #fbf7ee; box-shadow: 2px 3px 0 rgba(60,40,20,.18); }
+.wm-layers { position: absolute; top: 12px; left: 12px; display: flex; gap: 4px; }
+.wm-layers button, .wm-zoom button { background: #f3ead6; border: 1px solid #a89574; padding: 3px 10px; box-shadow: 1px 2px 0 rgba(60,40,20,.15); }
+.wm-layers button[data-on=true] { background: #3a2e22; color: #fbf7ee; }
+.wm-zoom { position: absolute; bottom: 16px; left: 12px; display: flex; flex-direction: column; gap: 4px; }
+.wm-card { position: absolute; top: 64px; right: 16px; width: 260px; padding: 14px 16px; background: #fbf7ee; box-shadow: 3px 4px 0 rgba(60,40,20,.2);
+  border-top: 6px solid var(--accent, #999); transform: translateX(120%); transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
+.wm-card[data-open=true] { transform: none; }
+.wm-card h2 { margin: 0 0 6px; font-size: 20px; letter-spacing: .15em; }
+.wm-bar { display: inline-block; width: 120px; height: 6px; margin-left: 8px; background: #e4d9c3; vertical-align: middle; }
+.wm-bar i { display: block; height: 100%; background: var(--accent); }
+.wm-regions { list-style: none; padding: 0; margin: 10px 0; }
+.wm-regions li { display: flex; gap: 8px; align-items: center; padding: 4px 6px; cursor: pointer; }
+.wm-regions li[data-ok=false] { opacity: .45; cursor: default; }
+.wm-regions li[data-chosen=true] { background: #efe4cc; }
+.wm-regions em { margin-left: auto; font-style: normal; font-size: 12px; }
+.wm-kind { width: 10px; height: 10px; background: var(--accent); transform: rotate(45deg); }
+.wm-kind-sect { border-radius: 50%; transform: none; }
+.wm-kind-rural { background: #a89574; }
+.wm-reason { font-size: 12px; color: #a2402f; margin: 0 0 6px; }
+.wm-go { width: 100%; padding: 6px; background: #3a2e22; color: #fbf7ee; border: 0; letter-spacing: .3em; }
+.wm-go:disabled { opacity: .4; cursor: default; }
+.wm-toast { position: absolute; transform: translateX(-50%); background: #3a2e22; color: #fbf7ee; padding: 3px 10px; font-size: 12px; pointer-events: none; }
+@media (max-width: 900px) { .wm-card { top: auto; bottom: 0; right: 0; left: 0; width: auto; transform: translateY(120%); } }
+
+/* -- Region HUD -- */
+.region-hud { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; }
+
 @media (prefers-reduced-motion: reduce) { .paper-lift, .main-menu { transition: none; } }

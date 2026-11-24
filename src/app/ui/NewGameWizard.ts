@@ -114,7 +114,7 @@ export function NewGameWizard() {
   const subject = { bodyArtKey: schema.portrait?.bodyArtKey ?? 'char.body.default', overlayArtKeys: overlays, pose: String(values.gender ?? '') };
 
   const fields = step === 0 ? schema.steps.char : step === 2 ? schema.steps.world : [];
-  const finish = () => { dispatchStartNewGame(values); services.scenes.retarget('mainMenu'); };
+  const finish = () => { dispatchStartNewGame(values); void services.scenes.goto('worldMap'); };
 
   return h('div', { class: 'wizard passthrough' },
     h('div', { class: 'stage passthrough' }, step === 0 ? h(PortraitSlot, { subject }) : null),
