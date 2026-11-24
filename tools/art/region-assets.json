@@ -370,7 +370,7 @@
   {
    "artKey": "terrain.ground.vale",
    "section": "A",
-   "label": "底纸：花谷",
+   "label": "底纸：桃源",
    "kind": "ground",
    "layer": 10,
    "terrain": "vale",
@@ -669,7 +669,7 @@
    ],
    "pxPerUnit": 768,
    "terrain": "plain",
-   "height": 0.45,
+   "height": 0.28,
    "aspect": 1.2,
    "anchor": [
     0.5,
@@ -770,7 +770,7 @@
    "pxPerUnit": 768,
    "terrain": "woods",
    "height": 0.62,
-   "aspect": 0.8,
+   "aspect": 0.98,
    "anchor": [
     0.5,
     0.0
@@ -1032,7 +1032,7 @@
    "pxPerUnit": 768,
    "terrain": "hill",
    "height": 0.48,
-   "aspect": 1.5,
+   "aspect": 1.94,
    "anchor": [
     0.5,
     0.0
@@ -1042,7 +1042,7 @@
   {
    "artKey": "terrain.standee.vale.0",
    "section": "B",
-   "label": "立牌：花谷 A",
+   "label": "立牌：桃源 A",
    "kind": "standee",
    "atlas": "region/region-terrain",
    "atlasSize": [
@@ -1062,7 +1062,7 @@
   {
    "artKey": "terrain.standee.vale.1",
    "section": "B",
-   "label": "立牌：花谷 B",
+   "label": "立牌：桃源 B",
    "kind": "standee",
    "atlas": "region/region-terrain",
    "atlasSize": [
@@ -1326,8 +1326,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "city",
    "pxPerUnit": 640,
@@ -1345,8 +1345,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "city",
    "pxPerUnit": 640,
@@ -1364,8 +1364,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "sectSeat",
    "pxPerUnit": 640,
@@ -1383,8 +1383,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "sectSeat",
    "pxPerUnit": 640,
@@ -1402,8 +1402,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "town",
    "pxPerUnit": 640,
@@ -1421,8 +1421,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "town",
    "pxPerUnit": 640,
@@ -1440,8 +1440,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "fort",
    "pxPerUnit": 640,
@@ -1459,8 +1459,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "fort",
    "pxPerUnit": 640,
@@ -1478,8 +1478,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "village",
    "pxPerUnit": 640,
@@ -1498,8 +1498,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "village",
    "pxPerUnit": 640,
@@ -1517,8 +1517,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "locKind": "village",
    "pxPerUnit": 640,
@@ -1536,8 +1536,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 640,
    "height": 0.65,
@@ -1554,8 +1554,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 640,
    "height": 0.65,
@@ -1572,8 +1572,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 640,
    "height": 0.65,
@@ -1590,8 +1590,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 640,
    "height": 0.65,
@@ -1608,8 +1608,8 @@
    "kind": "standee",
    "atlas": "region/region-locations",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 640,
    "height": 0.65,
@@ -1624,10 +1624,10 @@
    "section": "E",
    "label": "前景件：矮墙",
    "kind": "standee",
-   "atlas": "region/region-terrain",
+   "atlas": "region/region-houses",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 768,
    "height": 0.23,
@@ -1643,10 +1643,10 @@
    "section": "E",
    "label": "前景件：石灯",
    "kind": "standee",
-   "atlas": "region/region-terrain",
+   "atlas": "region/region-houses",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 768,
    "height": 0.29,
@@ -1662,10 +1662,10 @@
    "section": "E",
    "label": "前景件：旗杆",
    "kind": "standee",
-   "atlas": "region/region-terrain",
+   "atlas": "region/region-houses",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 768,
    "height": 0.33,
@@ -1681,10 +1681,10 @@
    "section": "E",
    "label": "前景件：路边树",
    "kind": "standee",
-   "atlas": "region/region-terrain",
+   "atlas": "region/region-houses",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 768,
    "height": 0.33,
@@ -1700,10 +1700,10 @@
    "section": "E",
    "label": "前景件：木栅",
    "kind": "standee",
-   "atlas": "region/region-terrain",
+   "atlas": "region/region-houses",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 768,
    "height": 0.2,
@@ -1719,10 +1719,10 @@
    "section": "E",
    "label": "前景件：石阶",
    "kind": "standee",
-   "atlas": "region/region-terrain",
+   "atlas": "region/region-houses",
    "atlasSize": [
-    4096,
-    2048
+    2048,
+    1024
    ],
    "pxPerUnit": 768,
    "height": 0.2,

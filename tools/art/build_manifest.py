@@ -55,7 +55,7 @@ def scan(art_root: Path, rep: al.Report) -> dict[str, dict]:
                 rep.error(al.rel(p), "图集格式", f"feather={data['feather']}、padding={data['padding']} 低于下限 2 / 4")
             for f in data["frames"]:
                 put(f["name"], {"atlas": rid, "frame": f["name"]}, al.rel(p))
-        elif "layers" in data:
+        elif isinstance(data.get("layers"), list):      # 纹理数组（ground.json）；terrain-art.json 的 layers 是开关（bool），不算
             for layer in data["layers"]:
                 put(layer["artKey"], {"array": rid, "layer": layer["layer"]}, al.rel(p))
         elif "decor" in data:

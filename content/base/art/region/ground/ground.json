@@ -1,0 +1,157 @@
+{
+ "size": 768,
+ "count": 18,
+ "layers": [
+  {
+   "layer": 0,
+   "terrain": "plain",
+   "artKey": "terrain.ground.plain",
+   "file": "00-plain.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 1,
+   "terrain": "lake",
+   "artKey": "terrain.ground.lake",
+   "file": "01-lake.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 2,
+   "terrain": "farmland",
+   "artKey": "terrain.ground.farmland",
+   "file": "02-farmland.webp",
+   "noRotate": true
+  },
+  {
+   "layer": 3,
+   "terrain": "woods",
+   "artKey": "terrain.ground.woods",
+   "file": "03-woods.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 4,
+   "terrain": "jungle",
+   "artKey": "terrain.ground.jungle",
+   "file": "04-jungle.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 5,
+   "terrain": "garden",
+   "artKey": "terrain.ground.garden",
+   "file": "05-garden.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 6,
+   "terrain": "mountain",
+   "artKey": "terrain.ground.mountain",
+   "file": "06-mountain.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 7,
+   "terrain": "cave",
+   "artKey": "terrain.ground.cave",
+   "file": "07-cave.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 8,
+   "terrain": "stoneForest",
+   "artKey": "terrain.ground.stoneForest",
+   "file": "08-stoneForest.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 9,
+   "terrain": "hill",
+   "artKey": "terrain.ground.hill",
+   "file": "09-hill.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 10,
+   "terrain": "vale",
+   "artKey": "terrain.ground.vale",
+   "file": "10-vale.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 11,
+   "terrain": "mulberry",
+   "artKey": "terrain.ground.mulberry",
+   "file": "11-mulberry.webp",
+   "noRotate": true
+  },
+  {
+   "layer": 12,
+   "terrain": "canyon",
+   "artKey": "terrain.ground.canyon",
+   "file": "12-canyon.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 13,
+   "terrain": "marsh",
+   "artKey": "terrain.ground.marsh",
+   "file": "13-marsh.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 14,
+   "terrain": "herbGarden",
+   "artKey": "terrain.ground.herbGarden",
+   "file": "14-herbGarden.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 15,
+   "terrain": "waste",
+   "artKey": "terrain.ground.waste",
+   "file": "15-waste.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 16,
+   "terrain": "abyss",
+   "artKey": "terrain.ground.abyss",
+   "file": "16-abyss.webp",
+   "noRotate": false
+  },
+  {
+   "layer": 17,
+   "terrain": "settlement",
+   "artKey": "terrain.ground.settlement",
+   "file": "17-settlement.webp",
+   "noRotate": false
+  }
+ ],
+ "terrainToLayer": {
+  "plain": 0,
+  "lake": 1,
+  "farmland": 2,
+  "woods": 3,
+  "jungle": 4,
+  "garden": 5,
+  "mountain": 6,
+  "cave": 7,
+  "stoneForest": 8,
+  "hill": 9,
+  "vale": 10,
+  "mulberry": 11,
+  "canyon": 12,
+  "marsh": 13,
+  "herbGarden": 14,
+  "waste": 15,
+  "abyss": 16,
+  "city": 17,
+  "sectSeat": 17,
+  "town": 17,
+  "fort": 17,
+  "village": 17
+ },
+ "strip": "ground-strip.webp"
+}

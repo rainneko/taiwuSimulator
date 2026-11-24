@@ -26,6 +26,8 @@ assets/art-source/
 art/*/raw/
 art/*/work/
 art/*/review/
+art/*/ab/
+art/*/pack/
 
 # Build output
 dist/

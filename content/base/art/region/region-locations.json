@@ -1,0 +1,28 @@
+{
+ "image": "region-locations.webp",
+ "size": [
+  2048,
+  1024
+ ],
+ "feather": 3.0,
+ "padding": 8,
+ "frames": [
+  {
+   "name": "loc.village.0",
+   "rect": [
+    4,
+    4,
+    715,
+    480
+   ],
+   "size": [
+    1.1172,
+    0.75
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  }
+ ]
+}

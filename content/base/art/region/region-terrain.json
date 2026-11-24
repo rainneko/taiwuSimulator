@@ -1,0 +1,589 @@
+{
+ "image": "region-terrain.webp",
+ "size": [
+  4096,
+  2048
+ ],
+ "feather": 3.0,
+ "padding": 8,
+ "frames": [
+  {
+   "name": "terrain.standee.abyss.0",
+   "rect": [
+    1946,
+    4,
+    444,
+    476
+   ],
+   "size": [
+    0.5783,
+    0.62
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.abyss.1",
+   "rect": [
+    1913,
+    918,
+    512,
+    399
+   ],
+   "size": [
+    0.6673,
+    0.52
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.canyon.0",
+   "rect": [
+    1913,
+    488,
+    685,
+    422
+   ],
+   "size": [
+    0.8928,
+    0.55
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.canyon.1",
+   "rect": [
+    2839,
+    4,
+    313,
+    476
+   ],
+   "size": [
+    0.4077,
+    0.62
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.cave.0",
+   "rect": [
+    2606,
+    488,
+    541,
+    422
+   ],
+   "size": [
+    0.7051,
+    0.55
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.cave.1",
+   "rect": [
+    1538,
+    488,
+    367,
+    445
+   ],
+   "size": [
+    0.4783,
+    0.58
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.farmland.0",
+   "rect": [
+    2433,
+    918,
+    406,
+    399
+   ],
+   "size": [
+    0.5291,
+    0.52
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.farmland.1",
+   "rect": [
+    967,
+    488,
+    563,
+    445
+   ],
+   "size": [
+    0.7338,
+    0.58
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.garden.0",
+   "rect": [
+    3742,
+    4,
+    342,
+    445
+   ],
+   "size": [
+    0.4458,
+    0.58
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.garden.1",
+   "rect": [
+    3742,
+    457,
+    253,
+    445
+   ],
+   "size": [
+    0.3298,
+    0.58
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.herbGarden.0",
+   "rect": [
+    1921,
+    1325,
+    541,
+    346
+   ],
+   "size": [
+    0.7036,
+    0.45
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.herbGarden.1",
+   "rect": [
+    3155,
+    488,
+    432,
+    422
+   ],
+   "size": [
+    0.563,
+    0.55
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.hill.0",
+   "rect": [
+    283,
+    511,
+    608,
+    399
+   ],
+   "size": [
+    0.7924,
+    0.52
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.hill.1",
+   "rect": [
+    3102,
+    1317,
+    713,
+    369
+   ],
+   "size": [
+    0.9275,
+    0.48
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.jungle.0",
+   "rect": [
+    4,
+    4,
+    528,
+    499
+   ],
+   "size": [
+    0.6878,
+    0.65
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.jungle.1",
+   "rect": [
+    283,
+    918,
+    531,
+    399
+   ],
+   "size": [
+    0.692,
+    0.52
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.lake.0",
+   "rect": [
+    4,
+    511,
+    271,
+    422
+   ],
+   "size": [
+    0.3532,
+    0.55
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.lake.1",
+   "rect": [
+    4,
+    1325,
+    698,
+    346
+   ],
+   "size": [
+    0.9078,
+    0.45
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.marsh.0",
+   "rect": [
+    2847,
+    918,
+    247,
+    399
+   ],
+   "size": [
+    0.3219,
+    0.52
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.marsh.1",
+   "rect": [
+    373,
+    1679,
+    290,
+    346
+   ],
+   "size": [
+    0.3772,
+    0.45
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.mountain.0",
+   "rect": [
+    822,
+    941,
+    497,
+    384
+   ],
+   "size": [
+    0.6471,
+    0.5
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.mountain.1",
+   "rect": [
+    3102,
+    918,
+    255,
+    384
+   ],
+   "size": [
+    0.332,
+    0.5
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.mulberry.0",
+   "rect": [
+    3595,
+    910,
+    471,
+    399
+   ],
+   "size": [
+    0.6138,
+    0.52
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.mulberry.1",
+   "rect": [
+    2470,
+    1325,
+    495,
+    346
+   ],
+   "size": [
+    0.6438,
+    0.45
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.plain.0",
+   "rect": [
+    4,
+    1679,
+    361,
+    346
+   ],
+   "size": [
+    0.4695,
+    0.45
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.plain.1",
+   "rect": [
+    1209,
+    1679,
+    327,
+    215
+   ],
+   "size": [
+    0.4259,
+    0.28
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.stoneForest.0",
+   "rect": [
+    540,
+    4,
+    419,
+    499
+   ],
+   "size": [
+    0.5458,
+    0.65
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.stoneForest.1",
+   "rect": [
+    3476,
+    4,
+    258,
+    476
+   ],
+   "size": [
+    0.3361,
+    0.62
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.vale.0",
+   "rect": [
+    967,
+    4,
+    496,
+    476
+   ],
+   "size": [
+    0.6461,
+    0.62
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.vale.1",
+   "rect": [
+    710,
+    1333,
+    491,
+    346
+   ],
+   "size": [
+    0.6386,
+    0.45
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.waste.0",
+   "rect": [
+    2398,
+    4,
+    433,
+    476
+   ],
+   "size": [
+    0.564,
+    0.62
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.waste.1",
+   "rect": [
+    1327,
+    1325,
+    586,
+    346
+   ],
+   "size": [
+    0.7621,
+    0.45
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.woods.0",
+   "rect": [
+    1471,
+    4,
+    467,
+    476
+   ],
+   "size": [
+    0.6083,
+    0.62
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  },
+  {
+   "name": "terrain.standee.woods.1",
+   "rect": [
+    3160,
+    4,
+    308,
+    476
+   ],
+   "size": [
+    0.4012,
+    0.62
+   ],
+   "anchor": [
+    0.5,
+    0.0
+   ]
+  }
+ ]
+}

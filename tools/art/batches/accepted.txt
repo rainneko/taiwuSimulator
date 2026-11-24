@@ -1,0 +1,105 @@
+# 已通过验收、可以打进运行时产物的 artKey（tools/art/pack_region.py 读）。
+# 新一批验收后把它的 artKey 加进来；原图按 pack_region.py 的目录优先级取（后验收的批次优先）。
+# 读原图的目录，按优先级（后验收的在前）。第四批验收后在最前面加 batch4。
+@sources batch3 ab batch2 batch1 trial
+
+# trial（试点 2026-11-24 通过；林地底纸、山、松、村庄已被后来的版本取代）
+terrain.ground.plain
+
+# batch1（35 张，2026-11-24 通过）
+terrain.ground.lake
+terrain.ground.woods
+terrain.ground.mountain
+terrain.ground.marsh
+terrain.ground.settlement
+terrain.standee.plain.0
+terrain.standee.plain.1
+terrain.standee.lake.0
+terrain.standee.lake.1
+terrain.standee.woods.1
+terrain.standee.mountain.1
+terrain.standee.marsh.0
+terrain.standee.marsh.1
+filler.bush.0
+filler.fern
+filler.tuft.0
+filler.tuft.1
+filler.reeds
+filler.flowers.0
+filler.flowers.1
+filler.rock.0
+filler.rock.1
+filler.mushrooms
+filler.stump
+filler.log
+filler.thorn
+ground.piece.dirt
+ground.piece.leaves
+ground.piece.moss
+ground.piece.pebbles
+ground.piece.puddle
+ground.piece.roots
+ground.piece.cracks
+ground.piece.needles
+ground.piece.grass
+
+# batch2（16 张，2026-11-24 通过；第四批验收后由青绿版取代）
+loc.prop.wall
+loc.prop.lantern
+loc.prop.poles
+loc.prop.tree
+loc.prop.fence
+loc.prop.steps
+house.cottage.0
+house.cottage.1
+house.cottage.2
+house.tile.0
+house.tile.1
+house.long.0
+house.long.1
+house.shop.0
+house.tower.0
+house.hall.0
+
+# ab（青绿 A/B 3 张，用户 2026-11-24 拍板青绿）
+terrain.standee.woods.0
+terrain.standee.mountain.0
+loc.village.0
+
+# batch3 第 1 组桃源 + 3b（36 张，2026-11-24 通过）
+terrain.ground.vale
+terrain.ground.farmland
+terrain.ground.jungle
+terrain.ground.garden
+terrain.ground.cave
+terrain.ground.stoneForest
+terrain.ground.hill
+terrain.ground.mulberry
+terrain.ground.canyon
+terrain.ground.herbGarden
+terrain.ground.waste
+terrain.ground.abyss
+terrain.standee.farmland.0
+terrain.standee.farmland.1
+terrain.standee.jungle.0
+terrain.standee.jungle.1
+terrain.standee.garden.0
+terrain.standee.garden.1
+terrain.standee.cave.0
+terrain.standee.cave.1
+terrain.standee.stoneForest.0
+terrain.standee.stoneForest.1
+terrain.standee.hill.0
+terrain.standee.hill.1
+terrain.standee.vale.0
+terrain.standee.vale.1
+terrain.standee.mulberry.0
+terrain.standee.mulberry.1
+terrain.standee.canyon.0
+terrain.standee.canyon.1
+terrain.standee.herbGarden.0
+terrain.standee.herbGarden.1
+terrain.standee.waste.0
+terrain.standee.waste.1
+terrain.standee.abyss.0
+terrain.standee.abyss.1

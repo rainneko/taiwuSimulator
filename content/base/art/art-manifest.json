@@ -1,0 +1,366 @@
+{
+ "filler.bush.0": {
+  "atlas": "region/region-detail",
+  "frame": "filler.bush.0"
+ },
+ "filler.fern": {
+  "atlas": "region/region-detail",
+  "frame": "filler.fern"
+ },
+ "filler.flowers.0": {
+  "atlas": "region/region-detail",
+  "frame": "filler.flowers.0"
+ },
+ "filler.flowers.1": {
+  "atlas": "region/region-detail",
+  "frame": "filler.flowers.1"
+ },
+ "filler.log": {
+  "atlas": "region/region-detail",
+  "frame": "filler.log"
+ },
+ "filler.mushrooms": {
+  "atlas": "region/region-detail",
+  "frame": "filler.mushrooms"
+ },
+ "filler.reeds": {
+  "atlas": "region/region-detail",
+  "frame": "filler.reeds"
+ },
+ "filler.rock.0": {
+  "atlas": "region/region-detail",
+  "frame": "filler.rock.0"
+ },
+ "filler.rock.1": {
+  "atlas": "region/region-detail",
+  "frame": "filler.rock.1"
+ },
+ "filler.stump": {
+  "atlas": "region/region-detail",
+  "frame": "filler.stump"
+ },
+ "filler.thorn": {
+  "atlas": "region/region-detail",
+  "frame": "filler.thorn"
+ },
+ "filler.tuft.0": {
+  "atlas": "region/region-detail",
+  "frame": "filler.tuft.0"
+ },
+ "filler.tuft.1": {
+  "atlas": "region/region-detail",
+  "frame": "filler.tuft.1"
+ },
+ "ground.piece.cracks": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.cracks"
+ },
+ "ground.piece.dirt": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.dirt"
+ },
+ "ground.piece.grass": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.grass"
+ },
+ "ground.piece.leaves": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.leaves"
+ },
+ "ground.piece.moss": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.moss"
+ },
+ "ground.piece.needles": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.needles"
+ },
+ "ground.piece.pebbles": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.pebbles"
+ },
+ "ground.piece.puddle": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.puddle"
+ },
+ "ground.piece.roots": {
+  "atlas": "region/region-detail",
+  "frame": "ground.piece.roots"
+ },
+ "house.cottage.0": {
+  "atlas": "region/region-houses",
+  "frame": "house.cottage.0"
+ },
+ "house.cottage.1": {
+  "atlas": "region/region-houses",
+  "frame": "house.cottage.1"
+ },
+ "house.cottage.2": {
+  "atlas": "region/region-houses",
+  "frame": "house.cottage.2"
+ },
+ "house.hall.0": {
+  "atlas": "region/region-houses",
+  "frame": "house.hall.0"
+ },
+ "house.long.0": {
+  "atlas": "region/region-houses",
+  "frame": "house.long.0"
+ },
+ "house.long.1": {
+  "atlas": "region/region-houses",
+  "frame": "house.long.1"
+ },
+ "house.shop.0": {
+  "atlas": "region/region-houses",
+  "frame": "house.shop.0"
+ },
+ "house.tile.0": {
+  "atlas": "region/region-houses",
+  "frame": "house.tile.0"
+ },
+ "house.tile.1": {
+  "atlas": "region/region-houses",
+  "frame": "house.tile.1"
+ },
+ "house.tower.0": {
+  "atlas": "region/region-houses",
+  "frame": "house.tower.0"
+ },
+ "loc.prop.fence": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.fence"
+ },
+ "loc.prop.lantern": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.lantern"
+ },
+ "loc.prop.poles": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.poles"
+ },
+ "loc.prop.steps": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.steps"
+ },
+ "loc.prop.tree": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.tree"
+ },
+ "loc.prop.wall": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.wall"
+ },
+ "loc.village.0": {
+  "atlas": "region/region-locations",
+  "frame": "loc.village.0"
+ },
+ "terrain.ground.abyss": {
+  "array": "region/ground/ground",
+  "layer": 16
+ },
+ "terrain.ground.canyon": {
+  "array": "region/ground/ground",
+  "layer": 12
+ },
+ "terrain.ground.cave": {
+  "array": "region/ground/ground",
+  "layer": 7
+ },
+ "terrain.ground.farmland": {
+  "array": "region/ground/ground",
+  "layer": 2
+ },
+ "terrain.ground.garden": {
+  "array": "region/ground/ground",
+  "layer": 5
+ },
+ "terrain.ground.herbGarden": {
+  "array": "region/ground/ground",
+  "layer": 14
+ },
+ "terrain.ground.hill": {
+  "array": "region/ground/ground",
+  "layer": 9
+ },
+ "terrain.ground.jungle": {
+  "array": "region/ground/ground",
+  "layer": 4
+ },
+ "terrain.ground.lake": {
+  "array": "region/ground/ground",
+  "layer": 1
+ },
+ "terrain.ground.marsh": {
+  "array": "region/ground/ground",
+  "layer": 13
+ },
+ "terrain.ground.mountain": {
+  "array": "region/ground/ground",
+  "layer": 6
+ },
+ "terrain.ground.mulberry": {
+  "array": "region/ground/ground",
+  "layer": 11
+ },
+ "terrain.ground.plain": {
+  "array": "region/ground/ground",
+  "layer": 0
+ },
+ "terrain.ground.settlement": {
+  "array": "region/ground/ground",
+  "layer": 17
+ },
+ "terrain.ground.stoneForest": {
+  "array": "region/ground/ground",
+  "layer": 8
+ },
+ "terrain.ground.vale": {
+  "array": "region/ground/ground",
+  "layer": 10
+ },
+ "terrain.ground.waste": {
+  "array": "region/ground/ground",
+  "layer": 15
+ },
+ "terrain.ground.woods": {
+  "array": "region/ground/ground",
+  "layer": 3
+ },
+ "terrain.standee.abyss.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.abyss.0"
+ },
+ "terrain.standee.abyss.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.abyss.1"
+ },
+ "terrain.standee.canyon.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.canyon.0"
+ },
+ "terrain.standee.canyon.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.canyon.1"
+ },
+ "terrain.standee.cave.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.cave.0"
+ },
+ "terrain.standee.cave.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.cave.1"
+ },
+ "terrain.standee.farmland.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.farmland.0"
+ },
+ "terrain.standee.farmland.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.farmland.1"
+ },
+ "terrain.standee.garden.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.garden.0"
+ },
+ "terrain.standee.garden.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.garden.1"
+ },
+ "terrain.standee.herbGarden.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.herbGarden.0"
+ },
+ "terrain.standee.herbGarden.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.herbGarden.1"
+ },
+ "terrain.standee.hill.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.hill.0"
+ },
+ "terrain.standee.hill.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.hill.1"
+ },
+ "terrain.standee.jungle.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.jungle.0"
+ },
+ "terrain.standee.jungle.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.jungle.1"
+ },
+ "terrain.standee.lake.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.lake.0"
+ },
+ "terrain.standee.lake.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.lake.1"
+ },
+ "terrain.standee.marsh.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.marsh.0"
+ },
+ "terrain.standee.marsh.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.marsh.1"
+ },
+ "terrain.standee.mountain.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.mountain.0"
+ },
+ "terrain.standee.mountain.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.mountain.1"
+ },
+ "terrain.standee.mulberry.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.mulberry.0"
+ },
+ "terrain.standee.mulberry.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.mulberry.1"
+ },
+ "terrain.standee.plain.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.plain.0"
+ },
+ "terrain.standee.plain.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.plain.1"
+ },
+ "terrain.standee.stoneForest.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.stoneForest.0"
+ },
+ "terrain.standee.stoneForest.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.stoneForest.1"
+ },
+ "terrain.standee.vale.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.vale.0"
+ },
+ "terrain.standee.vale.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.vale.1"
+ },
+ "terrain.standee.waste.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.waste.0"
+ },
+ "terrain.standee.waste.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.waste.1"
+ },
+ "terrain.standee.woods.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.woods.0"
+ },
+ "terrain.standee.woods.1": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.woods.1"
+ }
+}

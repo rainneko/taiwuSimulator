@@ -199,7 +199,8 @@ class RegionPromptsTest(unittest.TestCase):
         self.assertEqual(dict(c), {"A": 18, "B": 34, "C": 11, "D": 5, "E": 6, "F": 5, "H": 17, "I": 10, "J": 10})
         for it in items:
             if it["kind"] == "standee" and it["section"] == "B":
-                self.assertTrue(0.45 <= it["height"] <= 0.65)
+                low = it["artKey"] == "terrain.standee.plain.1"   # 卵石 0.28（v1.4，region_prompts.LOW_STANDEES）
+                self.assertTrue((0.25 if low else 0.45) <= it["height"] <= 0.65, it["artKey"])
         dens = {it["terrain"]: it["density"] for it in items if it["kind"] == "ground" and it["section"] == "A"
                 and it["terrain"] != "settlement"}
         self.assertEqual(len(dens), 17)
