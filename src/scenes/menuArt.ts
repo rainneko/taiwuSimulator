@@ -1,4 +1,37 @@
-import { CanvasTexture, SRGBColorSpace, Texture } from 'three';
+import { CanvasTexture, ClampToEdgeWrapping, LinearFilter, RepeatWrapping, SRGBColorSpace, Texture, TextureLoader } from 'three';
+
+/** Vite dev 直接服务项目根目录，此路径在 dev 下可用；prod 构建不包含（原版资源不分发）。 */
+export const MENU_ASSET_BASE = `${import.meta.env.BASE_URL}assets/main-menu/main_menu/`;
+
+const _loader = new TextureLoader();
+
+/**
+ * 加载原版主菜单贴图。失败静默返回 null（由调用方降级到程序化纹理）。
+ * @param relPath 相对于 MENU_ASSET_BASE 的子路径，如 `background/MianScrollBack.png`
+ * @param wrapS   横向重复包裹（卷轴背景需要）
+ */
+export async function loadMenuTexture(
+  relPath: string,
+  wrapS: 'repeat' | 'clamp' = 'clamp',
+  signal?: AbortSignal,
+): Promise<Texture | null> {
+  try {
+    const tex = await _loader.loadAsync(MENU_ASSET_BASE + relPath);
+    if (signal?.aborted) { tex.dispose(); return null; }
+    tex.colorSpace = SRGBColorSpace;
+    tex.minFilter = LinearFilter;
+    tex.magFilter = LinearFilter;
+    tex.wrapS = wrapS === 'repeat' ? RepeatWrapping : ClampToEdgeWrapping;
+    tex.wrapT = ClampToEdgeWrapping;
+    return tex;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 程序化占位（原版资源不可用时的降级）
+// ---------------------------------------------------------------------------
 
 /** 内容包缺图时的程序化占位：水墨远山剪影（带 alpha，供 cutout）。 */
 export function inkRidgeTexture(seed: number, tone: string, w = 1024, h = 256): Texture {
