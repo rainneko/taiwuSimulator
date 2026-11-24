@@ -241,6 +241,29 @@ class HouseTest(unittest.TestCase):
                 if kind in pg.HOUSE_FIRST:
                     self.assertEqual(a[0].kind, pg.HOUSE_FIRST[kind])
 
+    def test_no_repeat_while_variants_left(self):
+        """同一格内，同一 houseKind 还有没用过的款时不重复用同一个 artKey（执行主管 2026-11-24）。"""
+        for kind in pg.HOUSE_RECIPES:
+            for seed in range(1, 201):
+                got = self.place(kind, seed)
+                for hk, variants in self.types.items():
+                    keys = [h.key for h in got if h.kind == hk]
+                    if len(keys) <= len(variants):
+                        self.assertEqual(len(keys), len(set(keys)), (kind, seed, keys))
+
+    def test_forced_repeat_not_adjacent(self):
+        """款数不够（每种只有一张图）时可以重复，但按屏幕横向排开，两栋相同的不相邻。"""
+        single = {hk: v[:1] for hk, v in self.types.items()}
+        filled = 0
+        for kind, ((lo, _hi), _c, _k) in pg.HOUSE_RECIPES.items():
+            for seed in range(1, 201):
+                got = pg.place_houses(0, 0, kind, seed, single, [])
+                order = sorted(got, key=lambda h: (h.x, h.z))
+                for a_, b_ in zip(order[:-1], order[1:]):
+                    self.assertNotEqual(a_.key, b_.key, (kind, seed))
+                filled += len(got) >= lo
+        self.assertGreater(filled, 0.6 * 200 * len(pg.HOUSE_RECIPES))
+
     def test_size_matches_asset(self):
         asp = {k: (h, a) for v in self.types.values() for k, h, a in v}
         for seed in range(1, 6):

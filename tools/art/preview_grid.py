@@ -656,14 +656,14 @@ def in_view_sector(poly: np.ndarray, apex: tuple[float, float], r: float = VIEW_
     return False
 
 
-def place_houses(i: int, j: int, kind: str, seed: int, types: dict, near_road: list) -> list[House]:
+def place_houses(i: int, j: int, kind: str, seed: int, types: dict, near_road: list, avoid=()) -> list[House]:
     """按配方在聚居格 (i, j) 里一栋一栋摆房屋立牌：空地、朝镜头的扇形、避开道路、四角都在本格、互不相交、前后错开。
     放不满下限时整组依次缩到 0.9、0.8 倍再试（HOUSE_SHRINK），仍不够才少放；取放得最多的那一次。"""
     (lo, hi), cands, size_k = HOUSE_RECIPES.get(kind, HOUSE_RECIPES["village"])
     n = lo + h32(seed, i, j, 300) % (hi - lo + 1)
     best: list[House] = []
     for m in HOUSE_SHRINK:
-        got = _place_once(i, j, kind, seed, types, near_road, cands, size_k * m, n)
+        got = _place_once(i, j, kind, seed, types, near_road, cands, size_k * m, n, avoid)
         if len(got) > len(best):
             best = got
         if len(best) >= lo:
@@ -683,7 +683,7 @@ def _blocks(a: House, b: House) -> bool:
     return (front.z - back.z) * math.tan(PITCH) < front.h - HOUSE_SHOW * back.h
 
 
-def _place_once(i, j, kind, seed, types, near_road, cands, size_k, n) -> list[House]:
+def _place_once(i, j, kind, seed, types, near_road, cands, size_k, n, avoid=()) -> list[House]:
     out: list[House] = []
     cx = i + 0.5
     qx, qz = clear_centre(i, j, kind)
@@ -694,7 +694,10 @@ def _place_once(i, j, kind, seed, types, near_road, cands, size_k, n) -> list[Ho
         k = first if (first and not out) else cands[h32(seed, i, j, 301, tries) % len(cands)]
         if k not in types:
             continue
-        key, hh, asp = types[k][h32(seed, i, j, 305, tries) % len(types[k])]
+        used = {o.key for o in out}                # 同一格内：同一 houseKind 还有没用过的款时不重复用同一张图
+        fresh = [v for v in types[k] if v[0] not in used]
+        pool = fresh or types[k]
+        k0 = h32(seed, i, j, 305, tries) % len(pool)
         sc = size_k * (0.92 + 0.16 * hf(seed, i, j, 308, tries))
         x = i + 0.12 + 0.76 * hf(seed, i, j, 302, tries)
         z = j + 0.12 + 0.76 * hf(seed, i, j, 303, tries)
@@ -703,26 +706,43 @@ def _place_once(i, j, kind, seed, types, near_road, cands, size_k, n) -> list[Ho
             x, z = cx + (hf(seed, i, j, 302, tries) - 0.5) * 0.06, j + 0.2 + 0.1 * hf(seed, i, j, 303, tries)
         elif z > qz and abs(x - qx) < (z - qz) * math.tan(VIEW_SECTOR_HALF) + 0.1:
             continue                               # 中心落在扇形（外扩一点）里的不用试
-        h = House(key, k, x, z, hh * asp * sc, hh * sc, (i, j))
-        poly = house_corners(h)
-        ok = True                                  # 四角都画在本格（按扭曲后的归属格）
-        for px_, pz_ in poly:
-            dx, dz = warp(px_, pz_, seed)
-            if (math.floor(px_ + dx), math.floor(pz_ + dz)) != (i, j):
-                ok = False
+        # 有新款：只试抽到的那一款。款都用过了（只能重复）：从抽到的那款起依次试，取第一款放得下、且不与同款相邻的；
+        # 都不行，再按配方顺序试别的种类里还没用过的款（只在这一处原本放不下时才用，不改变能放下时的结果）
+        tries_ = [(k, v) for m in (range(1) if fresh else range(len(pool))) for v in [pool[(k0 + m) % len(pool)]]]
+        if not fresh:
+            tries_ += [(c, v) for c in dict.fromkeys(cands) if c != k and c in types
+                       for v in [v for v in types[c] if v[0] not in used][:1]]
+        for kk, (key, hh, asp) in tries_:
+            h = House(key, kk, x, z, hh * asp * sc, hh * sc, (i, j))
+            if _house_fits(h, out, i, j, kind, seed, qx, qz, near_road, avoid) and \
+                    not (key in used and _same_key_adjacent(h, out)):
+                out.append(h)
                 break
-        if not ok:
-            continue
-        if _point_in_poly((qx, qz), poly, clear_radius(kind)):     # 空地
-            continue
-        if in_view_sector(poly, (qx, qz)):                        # 朝镜头的扇形：房子会挡住站在空地上的棋子
-            continue
-        if any(_point_in_poly(pt, poly, ROAD_W / 2 + 0.02) for pt in near_road):   # 道路
-            continue
-        if any(_blocks(h, o) for o in out):
-            continue
-        out.append(h)
     return out
+
+
+def _house_fits(h: House, out: list[House], i, j, kind, seed, qx, qz, near_road, avoid) -> bool:
+    poly = house_corners(h)
+    for px_, pz_ in poly:                          # 四角都画在本格（按扭曲后的归属格）
+        dx, dz = warp(px_, pz_, seed)
+        if (math.floor(px_ + dx), math.floor(pz_ + dz)) != (i, j):
+            return False
+    if _point_in_poly((qx, qz), poly, clear_radius(kind)):         # 空地
+        return False
+    if in_view_sector(poly, (qx, qz)):                            # 朝镜头的扇形：房子会挡住站在空地上的棋子
+        return False
+    if any(_point_in_poly(pt, poly, ROAD_W / 2 + 0.02) for pt in near_road):   # 道路
+        return False
+    if any(_point_in_poly((ax, az), poly, r) for ax, az, r in avoid):         # v1.4 原型：河
+        return False
+    return not any(_blocks(h, o) for o in out)
+
+
+def _same_key_adjacent(h: House, out: list[House]) -> bool:
+    """款数不够、只能重复用同一张图时：按屏幕横向（x，同 x 再按 z）排开，两栋相同的不能相邻（中间至少隔一栋别的）。"""
+    order = sorted(out + [h], key=lambda o: (o.x, o.z))
+    k = order.index(h)
+    return any(0 <= m < len(order) and order[m].key == h.key for m in (k - 1, k + 1))
 
 
 @dataclass
@@ -740,6 +760,10 @@ class Scene:
     levels: dict = field(default_factory=dict)        # (i, j) → 格的层号（v1.3 地形纸层；空 = 平面）
     houses: list = field(default_factory=list)        # House 列表（v1.3.1 单栋房屋立牌，也已作为 Card 放进 cards；空 = 用整体地点立牌）
     _lgrid: np.ndarray | None = None
+    rivers: list = field(default_factory=list)        # v1.4 原型（--rivers）：region_features.River 列表
+    crossings: list = field(default_factory=list)     # v1.4 原型：桥 / 汀步 {edge, kind, style, ...}
+    overlay: list = field(default_factory=list)       # v1.4 原型：压在道路与河之上的平贴件（木板桥、汀步、码头）
+    mountain: object = None                           # v1.4 原型（--ridges）：region_features.MountainPlan
 
     def lgrid(self) -> np.ndarray:
         """层号网格（地区外 = 0），索引方式同 grid()。"""
@@ -804,7 +828,7 @@ def slot_layout(n: int) -> list[tuple[float, float]]:
 
 def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[str], seed: int,
                 settlements: int = 2, roads: bool = True, region: int | None = None, layers: bool = True,
-                houses: bool = False) -> Scene:
+                houses: bool = False, features: frozenset = frozenset(), peak_height: float = 0.5) -> Scene:
     # 可见范围：屏幕四角落到地面，再外扩（远侧多留 2 行给高立牌）
     pts = [cam.ground_at(x, y) for x, y in ((0, 0), (cam.w, 0), (0, cam.h), (cam.w, cam.h))]
     xs, zs = [p[0] for p in pts], [p[1] for p in pts]
@@ -858,6 +882,16 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
     scene = Scene(x0, z0, nx, nz, terrain, [], [], [])
     if layers:
         scene.levels = cell_levels(terrain)
+    rf = None
+    if features:                                   # v1.4 原型：三个默认关闭的开关
+        import region_features as rf
+        rf.bind(sys.modules[__name__])
+        rf.ensure_assets(assets)
+        if "ridges" in features:
+            scene.mountain = rf.mountain_plan(terrain, scene.levels if layers else cell_levels(terrain), seed, peak_height)
+            if layers:
+                scene.levels = scene.mountain.levels
+    heights = {**{k: v["height"] for k, v in item_of.items() if "height" in v}, **(rf.EXTRA_HEIGHT if rf else {})}
 
     # 道路先算（房屋要避开它）
     road: list[tuple[int, int]] = []
@@ -873,6 +907,11 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
                     cj += 1 if bj > cj else -1
                 path.append((ci, cj))
         road = path
+    rivers = []
+    if rf and "rivers" in features:
+        rivers = rf.make_rivers(terrain, scene.levels or cell_levels(terrain), road, seed)
+        scene.rivers = rivers
+        scene.crossings = rf.make_crossings(rivers, road, loc_cells, terrain, seed)
 
     cards: list[Card] = []
     for (i, j), kind in loc_cells.items():
@@ -886,7 +925,8 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
                     if p_ == (i, j):
                         for tt in np.linspace(0, 0.5, 8):
                             near_road.append((i + 0.5 + (q_[0] - i) * tt, j + 0.5 + (q_[1] - j) * tt))
-            got = place_houses(i, j, kind, seed, assets.house_types, near_road)
+            got = place_houses(i, j, kind, seed, assets.house_types, near_road,
+                               rf.avoid_points(rivers, i, j) if rivers else ())
             scene.houses += got
             cards += [Card(h.key, h.x, h.z, h.h, 1) for h in got]
         else:
@@ -896,6 +936,8 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
         n = h32(seed, i, j, 12) % 3 if pool else 0
         for s, (ox, oz) in enumerate(((-0.38, 0.25), (0.36, 0.27))[:n]):
             pk = pool[h32(seed, i, j, 13 + s) % len(pool)]
+            if rivers and not rf.river_clear(rivers, i + 0.5 + ox, j + 0.5 + oz):
+                continue
             cards.append(Card(pk, i + 0.5 + ox, j + 0.5 + oz, item_of[pk]["height"], 2))
 
     for (i, j), t in terrain.items():
@@ -912,6 +954,21 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
             n = len(slots)
         if n == 0:
             continue
+        if scene.mountain is not None and t == "mountain":     # v1.4 原型：山牌分档 + 山脊线
+            for k, (key, ox, oz, hh) in enumerate(rf.mountain_slots(scene.mountain, i, j, n, seed)):
+                sc = 1.0 if hh is not None else (0.92 + 0.16 * hf(seed, i, j, 50 + k)) * CROWD_SCALE[n]
+                hh = hh or heights[key] * sc
+                ok_pos = False
+                for _ in range(3):
+                    x_, z_ = i + 0.5 + ox, j + 0.5 + oz
+                    if owner(terrain, x_, z_, seed) == t and level_ok(scene, x_, z_, seed) and \
+                            (not rivers or rf.river_clear(rivers, x_, z_)):
+                        ok_pos = True
+                        break
+                    ox, oz = ox * 0.6, oz * 0.6
+                if ok_pos or not rivers or rf.river_clear(rivers, i + 0.5 + ox, j + 0.5 + oz):
+                    cards.append(Card(key, i + 0.5 + ox, j + 0.5 + oz, hh))
+            continue
         keys = has_real([it["artKey"] for it in by_terrain[t]])
         picks = [keys[(h32(seed, i, j, 22) + k) % len(keys)] for k in range(n)]
         picks.sort(key=lambda k: -item_of[k]["height"])            # 高的放后排（槽位按从后到前排好）
@@ -920,9 +977,15 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
             sc = (0.92 + 0.16 * hf(seed, i, j, 50 + k)) * CROWD_SCALE[n]
             ox, oz = ox + jx, oz + jz
             for _ in range(3):                     # 交界弯进本格时，牌脚落在别的地形上 → 向格心收；也不骑在层边上
-                if owner(terrain, i + 0.5 + ox, j + 0.5 + oz, seed) == t and level_ok(scene, i + 0.5 + ox, j + 0.5 + oz, seed):
+                if owner(terrain, i + 0.5 + ox, j + 0.5 + oz, seed) == t and level_ok(scene, i + 0.5 + ox, j + 0.5 + oz, seed) \
+                        and (not rivers or rf.river_clear(rivers, i + 0.5 + ox, j + 0.5 + oz)):
                     break
                 ox, oz = ox * 0.6, oz * 0.6
+            if rivers and not rf.river_clear(rivers, i + 0.5 + ox, j + 0.5 + oz):
+                continue
+            if "ecotones" in features and rf.CATEGORY.get(t) == "wood" and rf.boundary_dist(
+                    terrain, i + 0.5 + ox, j + 0.5 + oz, seed, lambda u: rf.CATEGORY.get(u) != "wood") < rf.FOREST_EDGE:
+                sc *= rf.FOREST_EDGE_K                # 林缘：靠交界的树牌缩小
             cards.append(Card(key, i + 0.5 + ox, j + 0.5 + oz, item_of[key]["height"] * sc))
 
     # 第二、三层：填充小件（低矮立牌）与地面散件（平贴），按地形的池子撒（工单 §3.6）
@@ -956,6 +1019,8 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
                     z = j + 0.5 + (hf(seed, i, j, 72, k, tries) - 0.5) * 0.86
                     if owner(terrain, x, z, seed) != t or not level_ok(scene, x, z, seed):
                         continue
+                    if rivers and not rf.river_clear(rivers, x, z):
+                        continue
                     if t in water and not near_land(x, z, shore["band"] if shore else 0.12):
                         continue                   # 水面上的芦苇、石块只长在岸边浅水里，湖心是开阔水面
                     if all((x - a) ** 2 + (z - b) ** 2 > 0.13 ** 2 for a, b in taken):
@@ -964,7 +1029,7 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
                         cards.append(Card(key, x, z, item_of[key]["height"] * sc, 0))
                         taken.append((x, z))
                         break
-        if shore and t not in water and t != "settlement":
+        if shore and t not in water and t != "settlement" and "ecotones" not in features:
             # 岸边件：陆地一侧沿弯曲的岸线补几株芦苇、石块、草簇（工单 §3.6）
             lo, hi = shore["count"]
             n = lo + h32(seed, i, j, 90) % (hi - lo + 1)
@@ -976,6 +1041,8 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
                 x = i + 0.5 + (hf(seed, i, j, 91, tries) - 0.5) * 0.96
                 z = j + 0.5 + (hf(seed, i, j, 92, tries) - 0.5) * 0.96
                 if owner(terrain, x, z, seed) != t or not near_water(x, z, shore["band"]) or not level_ok(scene, x, z, seed):
+                    continue
+                if rivers and not rf.river_clear(rivers, x, z):
                     continue
                 if all((x - a) ** 2 + (z - b) ** 2 > 0.11 ** 2 for a, b in taken):
                     key = keys[h32(seed, i, j, 93, tries) % len(keys)]
@@ -990,8 +1057,28 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
                 key = keys[h32(seed, i, j, 81, k) % len(keys)]
                 size = item_of[key]["height"] * (0.8 + 0.4 * hf(seed, i, j, 82, k))
                 m = 0.5 - size * 0.35
-                pieces.append((key, i + 0.5 + (hf(seed, i, j, 83, k) - 0.5) * 2 * m,
-                               j + 0.5 + (hf(seed, i, j, 84, k) - 0.5) * 2 * m, size, 2 * math.pi * hf(seed, i, j, 85, k)))
+                px_, pz_ = i + 0.5 + (hf(seed, i, j, 83, k) - 0.5) * 2 * m, j + 0.5 + (hf(seed, i, j, 84, k) - 0.5) * 2 * m
+                if rivers and not rf.river_clear(rivers, px_, pz_, size * 0.35 + rf.AVOID_PAD):
+                    continue
+                pieces.append((key, px_, pz_, size, 2 * math.pi * hf(seed, i, j, 85, k)))
+
+    if rf and rivers:
+        for key, x, z, hh in rf.bank_cards(rivers, scene.crossings, terrain, seed, shore, heights, has_real, bases, scene):
+            cards.append(Card(key, x, z, hh, 0))
+        bc, bf = rf.crossing_items(scene.crossings)
+        cards += [Card(key, x, z, hh, 2) for key, x, z, hh in bc]
+        scene.overlay += bf
+    if rf and "ecotones" in features:
+        fcount: dict = {}
+        for c in cards:
+            if c.key.startswith("filler."):
+                cell = (math.floor(c.x), math.floor(c.z))
+                fcount[cell] = fcount.get(cell, 0) + 1
+        ec, ef, eo = rf.ecotone_items(scene, terrain, seed, heights, has_real, bases, fcount, shore, rivers,
+                                      scene.levels or cell_levels(terrain))
+        cards += [Card(key, x, z, hh, 0) for key, x, z, hh in ec]
+        pieces += ef
+        scene.overlay += eo
 
     if scene.levels:
         for c in cards:
@@ -1128,6 +1215,14 @@ def cell_tile(scene: Scene, i: int, j: int, res: int, gc: GroundCache, items_of:
         if nt == t:
             dd = (u, 1 - u, v, 1 - v)[k]
             crease = np.where(wid == own, np.minimum(crease, smoothstep(0, SEAM, dd)), crease)
+    rfield = None
+    if scene.rivers:                               # v1.4 原型：河带里不撕边、不加接触阴影
+        import region_features as rf
+        rfield = rf.river_field(scene.rivers, gx, gz)
+        band = rfield[0] < rfield[2] + rf.RIM_W + 0.04
+        paper = np.where(band, 1.0, paper)
+        lip = np.where(band, 0.0, lip)
+        shade = np.where(band, 0.0, shade)
     col = col + (SHALLOW_COLOR - col) * (shallow * SHALLOW_K)[..., None]
     col = col * (1 - lip[..., None] * 0.55) + RIM_COLOR * lip[..., None] * 0.55
     col *= (1 - shade * SHADE_K)[..., None]
@@ -1145,6 +1240,15 @@ def cell_tile(scene: Scene, i: int, j: int, res: int, gc: GroundCache, items_of:
         draw_road(rimg, scene, i, j, res, assets)
         ra = np.asarray(rimg, np.float32) / 255.0
         col = col * (1 - ra[..., 3:]) + ra[..., :3] * ra[..., 3:]
+    if rfield is not None and np.isfinite(rfield[0]).any():
+        levm = level_field(scene, wx, wz, ci, cj) if scene.levels else np.zeros((res, res), np.float32)
+        wat = np.isin(wid, [names.index(n) for n in names if n in water])
+        lt = gc.get("lake", res)
+        tex = lt[np.floor(gz * res).astype(int) % (2 * res), np.floor(gx * res).astype(int) % (2 * res)]
+        col = rf.paint_river(col, rfield, tex, wat | (levm > 0), shadow_dir, res, SHALLOW_COLOR, RIM_COLOR)
+    if scene.overlay:
+        import region_features as rf
+        col = rf.composite_pieces(col, scene.overlay, assets, i, j, res)
 
     # 立牌落影
     sh = np.zeros((res, res), np.float32)
@@ -1432,20 +1536,23 @@ def make_preview(items: list[dict], *, cols: float, seed: int, size=(1920, 1080)
                  shadow: str = "lowerRight", sight: int | None = None, region: int | None = None,
                  pawn: bool = True, ground_px: int | None = GROUND_PX, layers: bool = True,
                  houses: bool = False, level_step: float | None = None,
-                 sight_warp: bool = False) -> tuple[Image.Image, Assets, Camera]:
+                 sight_warp: bool = False, features=frozenset(),
+                 peak_height: float = 0.5) -> tuple[Image.Image, Assets, Camera]:
     global LEVEL_STEP
     saved = LEVEL_STEP
     if level_step is not None:                     # 对比用：临时改模块级的层厚（render 与布置都读它），画完复原
         LEVEL_STEP = level_step
     try:
         return _make_preview(items, cols, seed, size, ortho, ss, terrains, settlements, roads, src, ground_src,
-                             use_real, shadow, sight, region, pawn, ground_px, layers, houses, sight_warp)
+                             use_real, shadow, sight, region, pawn, ground_px, layers, houses, sight_warp,
+                             frozenset(features), peak_height)
     finally:
         LEVEL_STEP = saved
 
 
 def _make_preview(items, cols, seed, size, ortho, ss, terrains, settlements, roads, src, ground_src, use_real,
-                  shadow, sight, region, pawn, ground_px, layers, houses, sight_warp):
+                  shadow, sight, region, pawn, ground_px, layers, houses, sight_warp,
+                  features=frozenset(), peak_height=0.5):
     terrains = terrains or list(NATURAL)
     assets = load_assets(items, terrains, src, ground_src, use_real)
     assets.ground_px = ground_px
@@ -1453,7 +1560,8 @@ def _make_preview(items, cols, seed, size, ortho, ss, terrains, settlements, roa
         assets.house_types = house_types_from(items)
     W, H = size
     cam = Camera(W * ss, H * ss, cols, ortho=ortho)
-    scene = build_scene(items, assets, cam, terrains, seed, settlements, roads, region, layers, houses)
+    scene = build_scene(items, assets, cam, terrains, seed, settlements, roads, region, layers, houses,
+                        features, peak_height)
     if pawn:                                       # 棋子（占位），站在注视格前半格，给尺度参照
         assets.standee["pawn"] = placeholder_pawn()
         py = level_at(scene, 0.5, 0.62, seed) * LEVEL_STEP if scene.levels else 0.0
@@ -1485,7 +1593,15 @@ def main(argv: list[str] | None = None) -> int:
                     help=f"底纸入库边长，一张覆盖 2×2 格（默认 {GROUND_PX} = medium 档；1024 = high 档；试点时两种对比）")
     ap.add_argument("--flat", action="store_true", help="不抬地形纸层（v1.2 的平面地面，等于低画质档的回退）")
     ap.add_argument("--houses", action="store_true",
-                    help="聚居格改用折纸房屋（v1.3；部件缺图时用占位）；默认仍画整张聚落立牌")
+                    help="聚居格改用按配方摆的单栋房屋立牌（v1.3.1；缺图时用占位）；默认仍画整张聚落立牌")
+    ap.add_argument("--rivers", action="store_true",
+                    help="v1.4 原型：河沿格边流（不占格）、道路跨河放桥、其余隔几格放汀步；默认关")
+    ap.add_argument("--ecotones", action="store_true",
+                    help="v1.4 原型：异种格边两侧的过渡带（林缘、山脚散石、芦苇、睡莲、码头……，并入岸边件）；默认关")
+    ap.add_argument("--ridges", action="store_true",
+                    help="v1.4 原型：山体加鞍部（只降不升）、山牌按层分档（山麓丘 / 山 / 高山 / 主峰）、沿山脊线摆；默认关")
+    ap.add_argument("--peak-height", type=float, default=0.5,
+                    help="配 --ridges：主峰山牌的高（格，默认 0.5；0.6 是待用户选的选项）")
     ap.add_argument("--level-step", type=float, default=None,
                     help=f"地形纸层一层的厚度（格，默认 {LEVEL_STEP}）；对比用，正式值在 terrain-art.json 的 levelStep")
     ap.add_argument("--sight-warp", action="store_true",
@@ -1515,13 +1631,17 @@ def main(argv: list[str] | None = None) -> int:
                                     ground_src=args.ground_src, use_real=not args.placeholders, shadow=args.shadow,
                                     sight=args.sight, region=args.region, pawn=not args.no_pawn,
                                     ground_px=args.ground_px, layers=not args.flat, houses=args.houses,
-                                    level_step=args.level_step, sight_warp=args.sight_warp)
+                                    level_step=args.level_step, sight_warp=args.sight_warp,
+                                    features=frozenset(f for f in ("rivers", "ecotones", "ridges") if getattr(args, f)),
+                                    peak_height=args.peak_height)
     out = args.out or (al.ROOT / "art" / "region" / "review" /
                        f"preview-{args.zoom or 'c%g' % args.cols}-s{args.seed}{'-ortho' if args.ortho else ''}"
                        f"{'' if args.ground_px == GROUND_PX else '-g%d' % args.ground_px}"
                        f"{'-flat' if args.flat else ''}{'-houses' if args.houses else ''}"
                        f"{'' if args.level_step is None else '-ls%g' % args.level_step}"
-                       f"{'-sw' if args.sight_warp else ''}.png")
+                       f"{'-sw' if args.sight_warp else ''}{'-rv' if args.rivers else ''}"
+                       f"{'-ec' if args.ecotones else ''}{'-rg' if args.ridges else ''}"
+                       f"{'' if args.peak_height == 0.5 else '-pk%g' % args.peak_height}.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out)
     print(f"已写入 {al.rel(out)}（{w}×{h}，{'正交' if args.ortho else '透视'}，注视行约 {w / args.cols:.0f}px / 格）")
