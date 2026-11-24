@@ -1,4 +1,5 @@
 import { batch, computed, signal } from '@preact/signals';
+import type { CharacterData } from '../core/character/types';
 
 export type Screen = 'boot' | 'mainMenu' | 'newGame' | 'worldMap' | 'region' | 'town' | 'combat';
 export type PanelId = string;
@@ -13,7 +14,7 @@ export type Quality = 'high' | 'medium' | 'low';
 
 /** 游戏态占位类型：真正的结构由 core 工单定义。 */
 export type TimeState = Record<string, unknown>;
-export type CharacterState = Record<string, unknown>;
+export type CharacterState = CharacterData;
 export type WorldState = Record<string, unknown>;
 export type TownState = Record<string, unknown>;
 
