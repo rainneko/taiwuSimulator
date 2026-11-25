@@ -39,6 +39,7 @@
     "terrain.standee.plain.0",
     "terrain.standee.plain.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "lake": {
@@ -67,7 +68,9 @@
     0
    ],
    "standees": [
-    "terrain.standee.lake.0",
+    "terrain.standee.lake.0"
+   ],
+   "landmarks": [
     "terrain.standee.lake.1"
    ],
    "water": true,
@@ -107,7 +110,8 @@
     0,
     1
    ],
-   "standees": [
+   "standees": [],
+   "landmarks": [
     "terrain.standee.farmland.0",
     "terrain.standee.farmland.1"
    ],
@@ -147,6 +151,7 @@
     "terrain.standee.woods.0",
     "terrain.standee.woods.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "jungle": {
@@ -180,6 +185,7 @@
     "terrain.standee.jungle.0",
     "terrain.standee.jungle.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "garden": {
@@ -211,6 +217,7 @@
     "terrain.standee.garden.0",
     "terrain.standee.garden.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "mountain": {
@@ -248,7 +255,42 @@
     "terrain.standee.mountain.0",
     "terrain.standee.mountain.1"
    ],
-   "water": false
+   "landmarks": [],
+   "water": false,
+   "tiers": {
+    "frontRows": 2,
+    "mid": {
+     "key": "terrain.standee.mountain.0",
+     "minLevel": 2
+    },
+    "tall": {
+     "key": "terrain.standee.mountain.1",
+     "minLevel": 3,
+     "note": "连绵山体放不下时的降档"
+    },
+    "massif": {
+     "key": null,
+     "minLevel": 3,
+     "requires": [
+      "left",
+      "right"
+     ],
+     "perCell": 1,
+     "fallback": "tall"
+    },
+    "peak": {
+     "key": null,
+     "perRange": 1,
+     "requires": [
+      "back"
+     ],
+     "offsetZ": -0.2,
+     "perCell": 1,
+     "fallback": "massif",
+     "occludesCellsBehind": 1.1,
+     "note": "俯角 53° 下约挡住身后 1.1 格地面；棋子在其后方时需要淡出（渲染侧）"
+    }
+   }
   },
   "cave": {
    "layer": 7,
@@ -282,6 +324,7 @@
     "terrain.standee.cave.0",
     "terrain.standee.cave.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "stoneForest": {
@@ -316,6 +359,7 @@
     "terrain.standee.stoneForest.0",
     "terrain.standee.stoneForest.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "hill": {
@@ -350,6 +394,7 @@
     "terrain.standee.hill.0",
     "terrain.standee.hill.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "vale": {
@@ -378,7 +423,9 @@
     3
    ],
    "standees": [
-    "terrain.standee.vale.0",
+    "terrain.standee.vale.0"
+   ],
+   "landmarks": [
     "terrain.standee.vale.1"
    ],
    "water": false
@@ -412,6 +459,7 @@
     "terrain.standee.mulberry.0",
     "terrain.standee.mulberry.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "canyon": {
@@ -446,6 +494,7 @@
     "terrain.standee.canyon.0",
     "terrain.standee.canyon.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "marsh": {
@@ -482,6 +531,7 @@
     "terrain.standee.marsh.0",
     "terrain.standee.marsh.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "herbGarden": {
@@ -511,6 +561,7 @@
     "terrain.standee.herbGarden.0",
     "terrain.standee.herbGarden.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "waste": {
@@ -544,6 +595,7 @@
     "terrain.standee.waste.0",
     "terrain.standee.waste.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "abyss": {
@@ -576,6 +628,7 @@
     "terrain.standee.abyss.0",
     "terrain.standee.abyss.1"
    ],
+   "landmarks": [],
    "water": false
   },
   "settlement": {
@@ -600,6 +653,7 @@
     2
    ],
    "standees": [],
+   "landmarks": [],
    "water": false
   }
  },

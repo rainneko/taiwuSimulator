@@ -327,17 +327,25 @@ class RidgeTest(unittest.TestCase):
                     self.assertEqual(tier, "low", (seed, c))  # 靠镜头的两行只放矮档
                 if tier == "peak":
                     self.assertIn(c, plan.peaks)
+                    self.assertEqual(t.get((c[0], c[1] - 1)), "mountain", (seed, c))   # 正后方一格也是山岳（遮挡约束）
+                if tier == "high":
+                    self.assertEqual({t.get((c[0] - 1, c[1])), t.get((c[0] + 1, c[1]))}, {"mountain"}, (seed, c))  # 连绵山体只放内部格
                 slots = rf.mountain_slots(plan, c[0], c[1], 2, seed)
                 if tier == "peak":
                     self.assertEqual(len(slots), 1)
                     self.assertEqual(slots[0][3], 0.6)
-                    self.assertEqual(slots[0][0], "terrain.standee.mountain.1")
+                    self.assertEqual(slots[0][0], "terrain.standee.mountain.peak")
+                    self.assertLess(slots[0][2], -0.1)          # 立在本格靠后
+                elif tier == "high":                          # v1.5：连绵山体一格 1 张
+                    self.assertEqual([s[0] for s in slots], ["terrain.standee.mountain.2"])
+                elif tier == "tall":
+                    self.assertTrue(all(s[0] == "terrain.standee.mountain.1" for s in slots))
                 elif tier == "low":
                     self.assertTrue(all(s[0] in rf.FOOT_KEYS for s in slots))
                     self.assertTrue(all(0.27 <= s[3] <= 0.33 for s in slots))
                 ax, az = plan.axis[c]
                 for _, ox, oz, _ in slots:
-                    perp = abs(-az * ox + ax * (oz + 0.05))
+                    perp = abs(-az * ox + ax * (oz + (rf.PEAK_BACK if tier == "peak" else 0.05)))
                     self.assertLessEqual(perp, rf.RIDGE_PERP + 1e-9)
 
     def test_one_peak_per_range(self):
@@ -357,8 +365,10 @@ class RidgeTest(unittest.TestCase):
                         n = (c[0] + a, c[1] + b)
                         if t.get(n) == "mountain" and n not in seen:
                             seen.add(n); comp.add(n); stack.append(n)
-                self.assertEqual(len(comp & plan.peaks), 1, seed)
-            self.assertEqual(len(plan.peaks), ncomp)
+                # 每片山至多 1 座主峰；有「正后方也是山岳、又不在靠镜头两行」的格时恰好 1 座（遮挡约束，v1.5）
+                can = any((c[0], c[1] - 1) in comp and (c[0], c[1] + 1) in comp and (c[0], c[1] + 2) in comp for c in comp)
+                self.assertEqual(len(comp & plan.peaks), 1 if can else 0, seed)
+            self.assertLessEqual(len(plan.peaks), ncomp)
 
 
 class QinglvGradeTest(unittest.TestCase):

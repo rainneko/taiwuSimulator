@@ -190,17 +190,18 @@ class RegionPromptsTest(unittest.TestCase):
     def test_check_passes(self):
         r = self.run_gen("--check")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("126 条", r.stdout)
+        self.assertIn("131 条", r.stdout)
 
     def test_list_counts_match(self):
         items = json.loads((TOOLS / "region-assets.json").read_text(encoding="utf-8"))["items"]
         from collections import Counter
         c = Counter(it["section"] for it in items)
-        self.assertEqual(dict(c), {"A": 18, "B": 34, "C": 11, "D": 5, "E": 10, "F": 5, "H": 19, "I": 10, "J": 13, "K": 1})
+        self.assertEqual(dict(c), {"A": 18, "B": 39, "C": 11, "D": 5, "E": 10, "F": 5, "H": 19, "I": 10, "J": 13, "K": 1})
         for it in items:
             if it["kind"] == "standee" and it["section"] == "B":
                 low = it["artKey"] == "terrain.standee.plain.1"   # 卵石 0.28（v1.4，region_prompts.LOW_STANDEES）
-                self.assertTrue((0.25 if low else 0.45) <= it["height"] <= 0.65, it["artKey"])
+                lo, hi = {"massif": (0.8, 1.1), "peak": (1.2, 1.8)}.get(it.get("role"), (0.25 if low else 0.45, 0.65))   # v1.5 山体两档
+                self.assertTrue(lo <= it["height"] <= hi, it["artKey"])
         dens = {it["terrain"]: it["density"] for it in items if it["kind"] == "ground" and it["section"] == "A"
                 and it["terrain"] != "settlement"}
         self.assertEqual(len(dens), 17)

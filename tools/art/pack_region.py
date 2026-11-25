@@ -29,6 +29,7 @@ from pathlib import Path
 
 import artlib as al
 import preview_grid as pg
+import region_features as rf
 
 ROOT = al.ROOT
 TOOLS = ROOT / "tools" / "art"
@@ -38,7 +39,7 @@ OUT = al.ART_ROOT                                  # content/base/art
 ACCEPTED = TOOLS / "batches" / "accepted.txt"
 SEAM_FIX = ("terrain.ground.settlement",)   # 1024 时过关、缩到 768 后上下接缝 1.74 > 1.6
 TERRAIN_ART_OUT = ROOT / "content" / "region" / "terrain-art.json"
-ATLASES = ("region/region-terrain", "region/region-detail", "region/region-houses", "region/region-locations")
+ATLASES = ("region/region-terrain", "region/region-mountains", "region/region-detail", "region/region-houses", "region/region-locations")
 TERRAIN_ART_VERSION = 1
 
 
@@ -59,12 +60,30 @@ def find_source(key: str, dirs: list[str]) -> Path | None:
             p = SRC_ROOT / d / f"{key}.{ext}"
             if p.is_file():
                 return p
+        p = SRC_ROOT / d / "sheet-cut" / f"{key}.png"      # 拼图切出的（split_sheet.py）；同批单独补出的优先
+        if p.is_file():
+            return p
     return None
 
 
 def run(args: list[str]) -> bool:
     r = subprocess.run([sys.executable, *args], cwd=ROOT)
     return r.returncode == 0
+
+
+def mountain_tiers(items: dict[str, dict], keys: set[str]) -> dict:
+    """山岳分档与遮挡约束（v1.5；参考实现 region_features.mountain_plan / mountain_slots）。key 为 null = 还没有图，按 fallback 放。
+    靠镜头的 frontRows 行只放山脚；主峰每片山至多 1 座，只放正后方一格也是山岳的格、立在本格靠后 offsetZ 处；
+    连绵山体只放左右邻格都是山岳的格；不满足约束就降到 fallback。"""
+    have = lambda k: k if k in keys else None
+    return {"frontRows": 2,
+            "mid": {"key": have(rf.TIER_KEYS["mid"]), "minLevel": 2},
+            "tall": {"key": have(rf.TIER_KEYS["tall"]), "minLevel": 3, "note": "连绵山体放不下时的降档"},
+            "massif": {"key": have(rf.TIER_KEYS["high"]), "minLevel": 3, "requires": ["left", "right"], "perCell": 1,
+                       "fallback": "tall"},
+            "peak": {"key": have(rf.TIER_KEYS["peak"]), "perRange": 1, "requires": ["back"], "offsetZ": -rf.PEAK_BACK,
+                     "perCell": 1, "fallback": "massif",
+                     "occludesCellsBehind": 1.1, "note": "俯角 53° 下约挡住身后 1.1 格地面；棋子在其后方时需要淡出（渲染侧）"}}
 
 
 def terrain_art(items: dict[str, dict], keys: set[str]) -> dict:
@@ -80,10 +99,15 @@ def terrain_art(items: dict[str, dict], keys: set[str]) -> dict:
              "level": {"edge": rule[0], "step": rule[1], "cap": rule[2]} if rule else None,
              "fillers": [k for k in pool.get("fillers", []) if k in keys], "fillerCount": pool.get("fillerCount", [0, 0]),
              "pieces": [k for k in pool.get("pieces", []) if k in keys], "pieceCount": pool.get("pieceCount", [0, 0]),
-             "standees": sorted(k for k in keys if k.startswith(f"terrain.standee.{t}.")),
+             # 普通立牌（每格按密度撒）；地标（每片相连地形 1 个）与山体分档（massif / peak）另列，v1.5
+             "standees": sorted(k for k in keys if k.startswith(f"terrain.standee.{t}.") and not items[k].get("landmark")
+                                and not items[k].get("role")),
+             "landmarks": sorted(k for k in keys if k.startswith(f"terrain.standee.{t}.") and items[k].get("landmark")),
              "water": bool(it.get("water"))}
         if it.get("shore"):
             e["shore"] = {**it["shore"], "fillers": [k for k in it["shore"]["fillers"] if k in keys]}
+        if t == "mountain":
+            e["tiers"] = mountain_tiers(items, keys)
         terrains[t] = e
     houses: dict[str, list] = {}
     for it in items.values():

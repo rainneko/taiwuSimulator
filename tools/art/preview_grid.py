@@ -435,6 +435,48 @@ LEVEL_RULES = {          # 地形: (边缘层, 每深入一格的增量, 封顶)
 LEVEL_EDGE_GAP = 0.04    # 立牌落点离层边界的最小距离（免得骑在崖边上）
 
 
+def place_landmarks(terrain: dict, landmarks: dict[str, list[str]], assets, seed: int) -> dict[tuple[int, int], str]:
+    """每片相连（四邻）的同种地形放 1 个地标：选离这片区域边缘最远的格（同距按哈希），地标从该地形的地标里按哈希挑。
+    只有一格大的区域不放（地标会把那一格占满）。没有真实图时用占位（与普通立牌一致）。"""
+    out = {}
+    seen = set()
+    for c0 in sorted(terrain):
+        t = terrain[c0]
+        if t not in landmarks or c0 in seen:
+            continue
+        comp, stack = [], [c0]
+        seen.add(c0)
+        while stack:
+            c = stack.pop()
+            comp.append(c)
+            for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (c[0] + a, c[1] + b)
+                if terrain.get(n) == t and n not in seen:
+                    seen.add(n)
+                    stack.append(n)
+        if len(comp) < 2:
+            continue
+        cs = set(comp)
+        depth = {c: 0 for c in comp if any((c[0] + a, c[1] + b) not in cs for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
+        frontier = list(depth)
+        while frontier:                                    # 到区域边缘的格距（广度优先）
+            nxt = []
+            for c in frontier:
+                for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    n = (c[0] + a, c[1] + b)
+                    if n in cs and n not in depth:
+                        depth[n] = depth[c] + 1
+                        nxt.append(n)
+            frontier = nxt
+        best = max(comp, key=lambda c: (depth.get(c, 0), h32(seed, c[0], c[1], 880)))
+        keys = landmarks[t]
+        real = [k for k in keys if k in assets.real]
+        keys = real or ([] if assets.real else keys)
+        if keys:
+            out[best] = keys[h32(seed, best[0], best[1], 881) % len(keys)]
+    return out
+
+
 def unwarp(u, v, seed: int, iters: int = 30):
     """warp 的逆：求 (x, z) 使 (x, z) + warp(x, z) = (u, v)。偏导上界约 0.55 < 1，不动点迭代收敛。"""
     u, v = np.asarray(u, np.float64), np.asarray(v, np.float64)
@@ -833,7 +875,7 @@ def slot_layout(n: int) -> list[tuple[float, float]]:
 
 def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[str], seed: int,
                 settlements: int = 2, roads: bool = True, region: int | None = None, layers: bool = True,
-                houses: bool = False, features: frozenset = frozenset(), peak_height: float = 0.5) -> Scene:
+                houses: bool = False, features: frozenset = frozenset(), peak_height: float | None = None) -> Scene:
     # 可见范围：屏幕四角落到地面，再外扩（远侧多留 2 行给高立牌）
     pts = [cam.ground_at(x, y) for x, y in ((0, 0), (cam.w, 0), (0, cam.h), (cam.w, cam.h))]
     xs, zs = [p[0] for p in pts], [p[1] for p in pts]
@@ -857,9 +899,11 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
 
     by_terrain: dict[str, list[dict]] = {}
     density = {it["terrain"]: tuple(it.get("density", (1, 2))) for it in items if it.get("kind") == "ground"}
+    landmarks: dict[str, list[str]] = {}
     for it in items:
-        if it.get("section") == "B":
-            by_terrain.setdefault(it["terrain"], []).append(it)
+        if it.get("section") != "B" or it.get("role"):          # 山体两档由 mountain_slots 放，不随普通立牌撒
+            continue
+        (landmarks if it.get("landmark") else by_terrain).setdefault(it["terrain"], []).append(it["artKey"] if it.get("landmark") else it)
     item_of = {it["artKey"]: it for it in items}
 
     # 聚居点：注视格放村庄，其余在 4–6 格外
@@ -945,6 +989,7 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
                 continue
             cards.append(Card(pk, i + 0.5 + ox, j + 0.5 + oz, item_of[pk]["height"], 2))
 
+    landmark_at = place_landmarks(terrain, landmarks, assets, seed)
     for (i, j), t in terrain.items():
         if t == "settlement" or t not in by_terrain:
             continue
@@ -958,6 +1003,10 @@ def build_scene(items: list[dict], assets: Assets, cam: Camera, terrains: list[s
             slots = slots[:max(1, n - 1)] or [(-di * 0.2, -0.05 - dj * 0.2)]
             n = len(slots)
         if n == 0:
+            continue
+        if (i, j) in landmark_at:                  # v1.5 地标：一片相连地形 1 个，放在最靠里的格子正中，这格不再撒普通立牌
+            key = landmark_at[(i, j)]
+            cards.append(Card(key, i + 0.5, j + 0.5 - 0.05, item_of[key]["height"]))
             continue
         if scene.mountain is not None and t == "mountain":     # v1.4 原型：山牌分档 + 山脊线
             for k, (key, ox, oz, hh) in enumerate(rf.mountain_slots(scene.mountain, i, j, n, seed)):
@@ -1595,7 +1644,7 @@ def make_preview(items: list[dict], *, cols: float, seed: int, size=(1920, 1080)
                  pawn: bool = True, ground_px: int | None = GROUND_PX, layers: bool = True,
                  houses: bool = False, level_step: float | None = None,
                  sight_warp: bool = False, features=frozenset(),
-                 peak_height: float = 0.5, grade: str | None = None, grade_skip=(),
+                 peak_height: float | None = None, grade: str | None = None, grade_skip=(),
                  cliff_walls: bool = False) -> tuple[Image.Image, Assets, Camera]:
     global LEVEL_STEP, CLIFF_WALLS
     saved, saved_cw = LEVEL_STEP, CLIFF_WALLS
@@ -1612,7 +1661,7 @@ def make_preview(items: list[dict], *, cols: float, seed: int, size=(1920, 1080)
 
 def _make_preview(items, cols, seed, size, ortho, ss, terrains, settlements, roads, src, ground_src, use_real,
                   shadow, sight, region, pawn, ground_px, layers, houses, sight_warp,
-                  features=frozenset(), peak_height=0.5, grade=None, grade_skip=()):
+                  features=frozenset(), peak_height=None, grade=None, grade_skip=()):
     terrains = terrains or list(NATURAL)
     assets = load_assets(items, terrains, src, ground_src, use_real)
     assets.ground_px = ground_px
@@ -1668,8 +1717,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="配 --grade：不调色的 artKey，逗号分隔（已按新风格重出的图）")
     ap.add_argument("--cliff-walls", action="store_true",
                     help="青绿 A/B：抬层侧壁印成赭色岩层断崖（顶沿留一线纸芯白）；默认纸芯白")
-    ap.add_argument("--peak-height", type=float, default=0.5,
-                    help="配 --ridges：主峰山牌的高（格，默认 0.5；0.6 是待用户选的选项）")
+    ap.add_argument("--peak-height", type=float, default=None,
+                    help="配 --ridges：主峰山牌的高（格；默认按清单 terrain.standee.mountain.peak 的高）")
     ap.add_argument("--level-step", type=float, default=None,
                     help=f"地形纸层一层的厚度（格，默认 {LEVEL_STEP}）；对比用，正式值在 terrain-art.json 的 levelStep")
     ap.add_argument("--sight-warp", action="store_true",
@@ -1711,7 +1760,7 @@ def main(argv: list[str] | None = None) -> int:
                        f"{'' if args.level_step is None else '-ls%g' % args.level_step}"
                        f"{'-sw' if args.sight_warp else ''}{'-rv' if args.rivers else ''}"
                        f"{'-ec' if args.ecotones else ''}{'-rg' if args.ridges else ''}"
-                       f"{'' if args.peak_height == 0.5 else '-pk%g' % args.peak_height}"
+                       f"{'' if args.peak_height is None else '-pk%g' % args.peak_height}"
                        f"{'-' + args.grade if args.grade else ''}{'-cw' if args.cliff_walls else ''}.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out)

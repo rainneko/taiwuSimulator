@@ -638,7 +638,12 @@ def ecotone_items(scene, terrain: dict, seed: int, item_heights: dict, has_real,
 # ── C. 山脉：鞍部（只降不升）、山牌分档、山脊线 ──────────────────────────────
 
 SADDLE_P = 0.4
-TIER_KEYS = {"mid": "terrain.standee.mountain.0", "high": "terrain.standee.mountain.1", "peak": "terrain.standee.mountain.1"}
+# v1.5：高档用连绵山体、主峰用主峰立牌（清单 role = massif / peak）；这两档一格只放 1 张
+TIER_KEYS = {"mid": "terrain.standee.mountain.0", "tall": "terrain.standee.mountain.1",
+             "high": "terrain.standee.mountain.2", "peak": "terrain.standee.mountain.peak"}
+# 遮挡约束（执行主管 2026-11-25）：俯角 53° 下 1.5 格高的主峰挡住身后约 1.1 格地面 → 主峰只放在「正后方一格也是山岳」的格，
+# 立在本格靠后 PEAK_BACK 处；连绵山体宽约 1.44 格 → 只放左右邻格都是山岳的内部格。放不下就降档：主峰 → 连绵山体 → 孤峰 mountain.1（tall）
+PEAK_BACK = 0.2
 RIDGE_SPREAD, RIDGE_PERP = 0.2, 0.08
 
 
@@ -648,10 +653,10 @@ class MountainPlan:
     tier: dict                       # 格 → 'low' | 'mid' | 'high' | 'peak'
     axis: dict                       # 格 → 山脉主轴 (ax, az)
     peaks: set                       # 每条山脉的主峰格（至多 1 个）
-    peak_height: float = 0.5
+    peak_height: float | None = None   # None = 按清单的高
 
 
-def mountain_plan(terrain: dict, levels: dict, seed: int, peak_height: float = 0.5, kind: str = "mountain") -> MountainPlan:
+def mountain_plan(terrain: dict, levels: dict, seed: int, peak_height: float | None = None, kind: str = "mountain") -> MountainPlan:
     lv = dict(levels)
     tier, axis, peaks = {}, {}, set()
     seen = set()
@@ -669,8 +674,12 @@ def mountain_plan(terrain: dict, levels: dict, seed: int, peak_height: float = 0
                     seen.add(n)
                     stack.append(n)
         comp.sort()
-        main = max(comp, key=lambda c: (lv.get(c, 1), h32(seed, c[0], c[1], 630)))
-        peaks.add(main)
+        cs = set(comp)
+        is_front = lambda c: (c[0], c[1] + 1) not in cs or (c[0], c[1] + 2) not in cs   # 靠镜头的两行
+        ok_peak = [c for c in comp if (c[0], c[1] - 1) in cs and not is_front(c)]        # 正后方一格也是山岳
+        main = max(ok_peak, key=lambda c: (lv.get(c, 1), h32(seed, c[0], c[1], 630))) if ok_peak else None
+        if main is not None:
+            peaks.add(main)
         for c in comp:                           # 鞍部：内部格按哈希降 1，降不到 1 以下；同种四邻层号差 ≤ 1；外沿恒为 +1
             L = lv.get(c, 1)
             if c == main or L < 2 or hf(seed, c[0], c[1], 631) >= SADDLE_P:
@@ -689,9 +698,11 @@ def mountain_plan(terrain: dict, levels: dict, seed: int, peak_height: float = 0
                 ax = (float(v[0]), float(v[1])) if v[0] >= 0 else (float(-v[0]), float(-v[1]))
         for c in comp:
             axis[c] = ax
-            front = terrain.get((c[0], c[1] + 1)) != kind or terrain.get((c[0], c[1] + 2)) != kind
             L = lv.get(c, 1)
-            tier[c] = "low" if front else "peak" if c == main else "high" if L >= 3 else "mid" if L >= 2 else "low"
+            t_ = "low" if is_front(c) else "peak" if c == main else "high" if L >= 3 else "mid" if L >= 2 else "low"
+            if t_ == "high" and not ((c[0] - 1, c[1]) in cs and (c[0] + 1, c[1]) in cs):
+                t_ = "tall"                              # 连绵山体宽过一格：左右邻格都得是山岳，否则降成孤峰
+            tier[c] = t_
     return MountainPlan(lv, tier, axis, peaks, peak_height)
 
 
@@ -701,13 +712,13 @@ def mountain_slots(plan: MountainPlan, i: int, j: int, n: int, seed: int) -> lis
     t = plan.tier[(i, j)]
     ax, az = plan.axis[(i, j)]
     px_, pz_ = -az, ax
-    if t == "peak":
+    if t in ("peak", "high"):
         n = 1
     ts = [0.0] if n <= 1 else [-RIDGE_SPREAD, RIDGE_SPREAD]
     out = []
     for k, tt in enumerate(ts):
         e = (hf(seed, i, j, 670 + k) - 0.5) * 2 * RIDGE_PERP
-        ox, oz = ax * tt + px_ * e, az * tt + pz_ * e - 0.05
+        ox, oz = ax * tt + px_ * e, az * tt + pz_ * e - (PEAK_BACK if t == "peak" else 0.05)
         if t == "low":
             key = FOOT_KEYS[(h32(seed, i, j, 671) + k) % 2]
             h = EXTRA_HEIGHT[key] * (0.92 + 0.16 * hf(seed, i, j, 672 + k))

@@ -24,12 +24,13 @@ OUT = ROOT / "docs" / "art-prompts" / "region.md"
 LIST_OUT = ROOT / "tools" / "art" / "region-assets.json"
 
 # 工单 §1 的分类数量；改表时同步改这里和工单
-EXPECTED_COUNTS = {"A": 18, "B": 34, "C": 11, "D": 5, "E": 10, "F": 5, "H": 19, "I": 10, "J": 13, "K": 1}   # v1.4：E +4、H +2、J +3、K 云带 1
+EXPECTED_COUNTS = {"A": 18, "B": 39, "C": 11, "D": 5, "E": 10, "F": 5, "H": 19, "I": 10, "J": 13, "K": 1}   # v1.4：E +4、H +2、J +3、K 云带 1；v1.5：B +5（山体两档、三张普通立牌）
 
 # 图集 id（相对内容包的 art/ 目录，不带扩展名）与入库像素密度（每 1 格宽的像素数）
 ATLAS_TERRAIN = "region/region-terrain"
 ATLAS_LOCATIONS = "region/region-locations"
 ATLAS_DETAIL = "region/region-detail"      # 填充小件 + 地面散件（v1.1）
+ATLAS_MOUNTAINS = "region/region-mountains"   # v1.5：连绵山体与主峰（一张就占地形图集一成以上）
 ATLAS_HOUSES = "region/region-houses"      # 单栋房屋立牌（v1.3.1，pack_atlas 打包）
 PX_TERRAIN = 768          # 入库像素密度（px / 格）：近档约 640px / 格（工单 §1.2），立牌按物理尺寸约 1.2 倍
 PX_LOCATIONS = 640
@@ -37,7 +38,7 @@ PX_SLOT = 768
 PX_HOUSE = 768            # 单栋房屋立牌的入库像素密度（px / 格），同地形立牌
 # v1.4：region-locations 现在只有驿站、废墟、奇遇标记与回退用的 loc.village.0（整张聚落立牌改为离线拼图），缩到 2048×1024；
 # 尺寸随内容变，专属地点（G 类）进来时再放大。
-ATLAS_SIZE = {ATLAS_TERRAIN: [4096, 2048], ATLAS_LOCATIONS: [2048, 1024], ATLAS_DETAIL: [2048, 1024], ATLAS_HOUSES: [2048, 2048], "province": [2048, 2048]}
+ATLAS_SIZE = {ATLAS_TERRAIN: [4096, 2048], ATLAS_LOCATIONS: [2048, 1024], ATLAS_DETAIL: [2048, 1024], ATLAS_HOUSES: [2048, 2048], ATLAS_MOUNTAINS: [2048, 2048], "province": [2048, 2048]}
 GROUND_SIZE = 768          # 底纸数组每层边长（medium / low 档、开发期）；一层覆盖 2×2 格 → 384 texel / 格；长图 768×13824 < WebP 上限 16383
 GROUND_SIZE_HIGH = 1024    # high 档（v1.2）：512 texel / 格；只出逐层文件并转 KTX2，不出长图（1024×18 超过 WebP 上限）
 
@@ -387,6 +388,20 @@ DECOR = [
 # 用户 2026-11-24：纸盒房子（程序搭形 + 部件贴图）和手绘插画立牌风格不搭，改成一栋一栋单独画的立牌，
 # 按聚居配方一栋一栋摆进格里（preview_grid.place_houses）。纸盒方案的副本在 docs/shelved/house-boxes/。
 # houseKind 供配方选用：cottage 小屋、tile 瓦房、long 长屋、shop 二层木楼、tower 瞭望楼、hall 殿阁。
+# B 追加（v1.5，第六批；docs/proposals/region_audit_2026-11-24.md）：
+#   role = massif / peak：山岳分档用（region_features.TIER_KEYS），高于普通立牌的 0.65 上限，进 region-mountains 图集，画幅放大；
+#   其余三张是普通立牌：原来的桃源入口、土地庙、水车、渔船改作「地标」（LANDMARKS，每片相连地形 1 个），普通格要有别的立牌可撒。
+MORE_STANDEES = [
+    # artKey, 地形, 标签, 描述, 高, 宽高比, role, 画幅
+    ("terrain.standee.mountain.2", "mountain", "立牌：山岳 连绵山体", "一道连绵的山体：三四座高低错落的山峰左右相连成一整块剪影，中间一座最高、两侧渐低，峰与峰之间是深深的山坳；山腰横过一道细长的留白纸云", 0.9, 1.6, "massif", "1536×1024"),
+    ("terrain.standee.mountain.peak", "mountain", "立牌：山岳 主峰", "一座高耸的主峰：峰体陡峭挺拔，峰尖略偏向一侧，侧面有两三道深的竖向沟壑；山腰缠一条留白的如意纸云，峰顶和崖边点几株很小的松", 1.5, 0.9, "peak", "1024×1536"),
+    ("terrain.standee.vale.2", "vale", "立牌：桃源 C", "两三块圆润的青石挨在一起，石缝里长出一丛兰草，石面落着几片淡粉白的桃花瓣", 0.45, 1.3, None, "1024×1024"),
+    ("terrain.standee.farmland.2", "farmland", "立牌：农田 C", "一个圆锥形的稻草垛，草是灰褐偏灰的干草色，垛顶扎一圈草绳，旁边斜靠一把木耙", 0.45, 1.0, None, "1024×1024"),
+    ("terrain.standee.lake.2", "lake", "立牌：湖泊 C", "一块平顶的大青石，石脚长着几丛细长的菖蒲，石上放着一只空的竹篓", 0.45, 1.4, None, "1024×1024"),
+]
+MORE_ROCK = "山石从下到上由赭石过渡到石绿，顶上点染石青；峭壁用斜向的斧劈皴块面，硬朗、有棱角；最高处可以有一条很细、断断续续的暗金线。不要圆滑的鼓包，几座山峰不要一样高。"
+LANDMARKS = {"terrain.standee.vale.1", "terrain.standee.farmland.0", "terrain.standee.farmland.1", "terrain.standee.lake.1"}
+
 # K 仙层（v1.4）：只放山岳 minLevel 层以上的格子（主峰附近），每地区至多 maxPerRegion 处；不随地形密度撒
 CLOUDS = [
     # artKey, 标签, 描述, 高, 宽高比, minLevel, maxPerRegion
@@ -488,7 +503,16 @@ def standee_prompt(desc: str, aspect: float, color: str | None = None, layered: 
 # ── v1.4 青绿内容改写（2026-11-24）────────────────────────────────────────────
 # 有条目的 artKey，prompt 的「内容」段整段换成这里的文字（第三、四批工单与 A/B 已按此出图）；
 # 上面数据表里的旧描述保留作对照，不再进 prompt。立牌与底纸末尾另加一行「避免」。
-QINGLV_CONTENT = {'filler.flowers.1': '内容：一丛兰草：十来片细长弯垂的叶子，叶是松墨与石绿，中间一两朵素白的小花。整体剪影偏横宽，宽约为高的 1.5 倍。',
+QINGLV_CONTENT = {'terrain.standee.woods.1': '内容：两棵一高一矮的柏树：树干笔直、灰赭色带细纵纹，树冠是一层层向上收拢的针叶团，像几片叠起的云，用松墨与石绿两种深浅，边缘是细密的针叶纹样；高的那棵略偏后。树冠不是规整的圆锥，也不是卡通的锯齿三角。整体剪影偏竖长，高约为宽的 1.3 倍。',
+ 'filler.bush.0': '内容：一丛圆润的矮灌木，叶团由三四层大小不一的圆纸片叠成，叶色是石绿与松墨两种深浅。整体剪影偏横宽，宽约为高的 1.4 倍。',
+ 'filler.thorn': '内容：一丛带刺的低矮荆棘，枝条是灰赭色、弯曲交错，叶片稀疏、灰绿色，挂着三四颗很小的朱砂色果子（暖色只在果子上）。整体剪影偏横宽，宽约为高的 1.4 倍。',
+ 'filler.log': '内容：一截横躺的倒木，树皮灰赭、粗糙带纵纹，一端断口参差、露出浅米色木心，上面长着一小片石绿苔藓。整体剪影偏横宽，宽约为高的 2.6 倍。',
+ 'filler.stump': '内容：一截锯平的矮树桩，树皮灰赭，顶面是浅米色、带一圈圈年轮，根部向两侧伸出几条短根，根上点几点石绿苔。整体剪影偏横宽，宽约为高的 1.4 倍。',
+ 'ground.piece.leaves': '内容：一小片散落的落叶：十几片大小不一的叶形纸片交叠，叶色是灰绿、松墨与少量灰赭，不是金黄或橙色。',
+ 'terrain.ground.abyss': '内容：「暗渊」地形的地表——破碎下陷的岩面：许多不规则的小裂口向下塌陷，裂口内由外向里一圈比一圈更深；岩面是墨青与深灰绿，明度比别的地形低两三档，但不是纯黑，也不发蓝；裂口最深处才是墨色。主色：墨青与深灰绿。',
+ 'terrain.ground.stoneForest': '内容：「石林」地形的地表——密集石柱的顶面：大小不一的多边形块面紧挨着拼满画面，像一根根石柱的平顶；块面是中等明度的青灰，带淡墨皴擦，缝隙里是深色并长着石绿苔点；整体不要接近白色，不能看起来像雪地。主色：青灰与石绿。',
+ 'terrain.ground.settlement': '内容：「聚居地基」地形的地表——村镇里踩实的空地：以灰褐的夯土地面为主，上面有几条被脚踩出的浅色小径纹，零星嵌着几块大小不一、不规则的青灰石板（合计不超过画面的两成），边角处长进一些细草；不是整齐铺满的石板广场。主色：灰褐夯土，石板青灰。',
+ 'filler.flowers.1': '内容：一丛兰草：十来片细长弯垂的叶子，叶是松墨与石绿，中间一两朵素白的小花。整体剪影偏横宽，宽约为高的 1.5 倍。',
  'filler.mushrooms': '内容：三四朵高矮不一的灵芝，伞面是扁平的肾形、带一圈圈同心纹，颜色是灰赭与深褐，边缘一线浅色。整体剪影偏横宽，宽约为高的 1.3 倍。',
  'ground.piece.petals': '内容：一片散落的淡粉白桃花瓣，二十来片小花瓣疏密不均。',
  'house.cottage.0': '内容：一间低矮的草顶小屋：厚厚的草顶压得很低，草是偏灰的枯草色（灰褐、灰绿），不是金黄；灰白色的土墙，正面一扇窄木门、一扇小方窗。木构是赭石色，暖色只在木头上。这是一栋单独的房子，不是一组建筑：除上面写到的东西以外，周围不画院墙、篱笆、树木、杂物，也不画别的房子；门、窗画成关着的；门楣、匾额如果有，一律留空白，不写任何字。整体剪影偏横宽，宽约为高的 '
@@ -548,7 +572,15 @@ QINGLV_CONTENT = {'filler.flowers.1': '内容：一丛兰草：十来片细长�
 AVOID_STANDEE = '避免：童话小镇、圆鼓鼓的山丘和光滑的草坡、秋天的橙黄色调、金色夕阳与暖光、Q 版造型、日式庭院的修剪造型与日式石灯笼、霓虹光与发光粒子。'
 AVOID_GROUND = '避免：秋天的橙黄色调、金色的暖光、卡通贴纸感、单个突出的大物体。'
 # 值以「避免：」开头 = 整行替换；否则是追加在通用避免行后面的词
-QINGLV_AVOID = {'filler.mushrooms': '伞形的小蘑菇、红白斑点的毒蘑菇',
+QINGLV_AVOID = {'terrain.standee.woods.1': '卡通圣诞树、锯齿三角形的树冠、橙红色树干',
+ 'filler.thorn': '鲜红的大果子、玫瑰花',
+ 'terrain.standee.mountain.2': '日式富士山、雪顶、圆滑的绿色鼓包',
+ 'terrain.standee.mountain.peak': '日式富士山、雪顶、火山口',
+ 'terrain.standee.farmland.2': '金黄色稻草垛、欧式干草捆、谷仓',
+ 'terrain.ground.abyss': '纯黑一片、藏青蓝色、发光的熔岩',
+ 'terrain.ground.stoneForest': '雪地、冰面、白色大理石',
+ 'terrain.ground.settlement': '整齐铺满的石板广场、水泥地、柏油路',
+ 'filler.mushrooms': '伞形的小蘑菇、红白斑点的毒蘑菇',
  'house.cottage.0': '金黄色或橙色的茅草顶、欧式农舍、窗内暖光',
  'house.cottage.1': '欧式农舍、木板小屋、谷仓、日式民居、窗内暖光',
  'house.cottage.2': '欧式农舍、木板小屋、谷仓、日式民居、窗内暖光',
@@ -661,6 +693,14 @@ def assets(slots: list[dict]) -> list[dict]:
         items.append({"artKey": key, "section": "J", "label": f"房屋：{label}", "kind": "standee", "houseKind": hk,
                       "atlas": ATLAS_HOUSES, "atlasSize": ATLAS_SIZE[ATLAS_HOUSES], "pxPerUnit": PX_HOUSE,
                       "height": h, "aspect": a, "anchor": [0.5, 0.0]})
+    for key, t, label, _desc, h, a, role, _size in MORE_STANDEES:
+        atlas = ATLAS_MOUNTAINS if role else ATLAS_TERRAIN
+        items.append({"artKey": key, "section": "B", "label": label, "kind": "standee", "atlas": atlas, "atlasSize": ATLAS_SIZE[atlas],
+                      "pxPerUnit": PX_TERRAIN, "terrain": t, "height": h, "aspect": a, "anchor": [0.5, 0.0], "seasonal": False,
+                      **({"role": role} if role else {})})
+    for it in items:
+        if it["artKey"] in LANDMARKS:
+            it["landmark"] = True
     for key, label, _desc, h, a, lv, mx in CLOUDS:
         items.append({"artKey": key, "section": "K", "label": label, "kind": "standee", "atlas": ATLAS_TERRAIN, "atlasSize": ATLAS_SIZE[ATLAS_TERRAIN],
                       "pxPerUnit": PX_TERRAIN, "terrain": "mountain", "height": h, "aspect": a, "anchor": [0.5, 0.0],
@@ -714,6 +754,13 @@ def build(slots: list[dict]) -> tuple[str, dict[str, int]]:
         for i, (desc, _h, a) in enumerate(standees):
             item("B", f"terrain.standee.{key}.{i}", f"立牌：{label} {'AB'[i]}", "1024×1024，透明底",
                  standee_prompt(desc, a, color))
+
+    for key, t, label, desc, _h, a, role, size in MORE_STANDEES:
+        pr = standee_prompt(desc + ("。" + MORE_ROCK.rstrip("。") if role else ""), a)
+        if size != "1024×1024":
+            assert "正方形画幅，1024×1024。" in pr
+            pr = pr.replace("正方形画幅，1024×1024。", f"{'竖' if size.startswith('1024') else '横'}幅，{size}。")
+        item("B", key, label, f"{size}，透明底", pr)
 
     out.append("\n## C. 地点立牌（通用款）\n")
     for key, kind, label, desc in LOCATIONS:
@@ -796,6 +843,14 @@ def check(slots: list[dict]) -> list[str]:
                 errs.append(f"terrain.standee.{key}.{i} 高 {h} 不在 {lo_h}–0.65（工单 §1）")
             if not (0.3 <= a <= 3.0):
                 errs.append(f"terrain.standee.{key}.{i} 宽高比 {a} 不合理")
+    for key, t, _l, desc, h, a, role, _size in MORE_STANDEES:
+        if bad := lint(desc, BANNED_ALL + BANNED_STANDEE):
+            errs.append(f"{key} 的描述含易误导的词：{bad}")
+        lo, hi = {"massif": (0.8, 1.1), "peak": (1.2, 1.8)}.get(role, (0.45, 0.65))
+        if not (lo <= h <= hi):
+            errs.append(f"{key} 高 {h} 不在 {lo}–{hi}")
+    if not LANDMARKS <= set(keys):
+        errs.append(f"LANDMARKS 里有不存在的 artKey：{sorted(LANDMARKS - set(keys))}")
     if set(CELL_DENSITY) != {t[0] for t in TERRAINS} or any(not (0 <= a <= b <= MAX_PER_CELL) for a, b in CELL_DENSITY.values()):
         errs.append(f"CELL_DENSITY 须覆盖全部 17 种自然地形，且每格张数在 0–{MAX_PER_CELL}（工单 §3.6）")
     keys_all = set(keys)

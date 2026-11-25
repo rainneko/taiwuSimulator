@@ -1,0 +1,40 @@
+# 地区场景第六批：山体两档、普通立牌、青绿重出、3a 未出的件（单张 15、拼图 2 张 / 25 件）。
+# 一行一个 artKey（= assets/art-source/region/batch6/ 下的文件名）；@sheet 行是拼图（sheet.<名>.png，流水线自动切）；出图指引：docs/art-prompts/region-batch-6.md
+@preview --houses --settlements 5 --ridges --terrains mountain,vale,farmland,lake,woods,plain,abyss,stoneForest --grade qinglv --grade-skip terrain.standee.mountain.0,terrain.standee.woods.0,loc.village.0,terrain.ground.vale,terrain.standee.vale.0,terrain.standee.vale.1,terrain.ground.hill,terrain.ground.stoneForest,terrain.ground.canyon,terrain.ground.cave,terrain.ground.jungle,terrain.ground.garden,terrain.ground.farmland,terrain.ground.mulberry,terrain.ground.herbGarden,terrain.ground.waste,terrain.ground.abyss,terrain.standee.hill.0,terrain.standee.hill.1,terrain.standee.stoneForest.0,terrain.standee.stoneForest.1,terrain.standee.canyon.0,terrain.standee.canyon.1,terrain.standee.cave.0,terrain.standee.cave.1,terrain.standee.jungle.0,terrain.standee.jungle.1,terrain.standee.garden.0,terrain.standee.garden.1,terrain.standee.farmland.0,terrain.standee.farmland.1,terrain.standee.mulberry.0,terrain.standee.mulberry.1,terrain.standee.herbGarden.0,terrain.standee.herbGarden.1,terrain.standee.waste.0,terrain.standee.waste.1,terrain.standee.abyss.0,terrain.standee.abyss.1,poi.station,poi.ruin,poi.marker.cave,poi.marker.stele,poi.marker.pavilion,filler.bush.1,filler.deadwood,filler.bamboo,filler.herbs,ground.piece.petals,house.cottage.0,house.hall.0,house.cottage.1,house.cottage.2,house.tile.0,house.tile.1,house.long.0,house.long.1,house.shop.0,house.tower.0,loc.prop.fence,loc.prop.wall,loc.prop.lantern,loc.prop.poles,loc.prop.tree,loc.prop.steps,terrain.standee.mountain.1,terrain.standee.marsh.1,filler.flowers.1,filler.mushrooms,house.shop.1,house.gate.0,house.gate.1,loc.prop.rack,loc.prop.dummy,loc.prop.stele,loc.prop.banner,filler.rock.2,filler.pine,terrain.standee.cloud.0,terrain.standee.mountain.2,terrain.standee.mountain.peak,terrain.standee.vale.2,terrain.standee.farmland.2,terrain.standee.lake.2,terrain.standee.woods.1,terrain.ground.plain,terrain.ground.settlement,filler.bush.0,filler.thorn,filler.stump,filler.log,ground.piece.leaves
+@sheet b6s1 4x2 filler.bush.0,filler.bush.1,filler.thorn,filler.herbs,filler.bamboo,filler.deadwood,filler.stump,filler.log
+@sheet b6s2 2x1 ground.piece.leaves,ground.piece.petals
+
+# 第 1 组 山岳两档（2 张，大画幅）
+terrain.standee.mountain.2
+terrain.standee.mountain.peak
+
+# 第 2 组 普通立牌（3 张）
+terrain.standee.vale.2
+terrain.standee.farmland.2
+terrain.standee.lake.2
+
+# 第 3 组 青绿重出与野外地点（6 张）
+terrain.standee.woods.1
+poi.station
+poi.ruin
+poi.marker.cave
+poi.marker.stele
+poi.marker.pavilion
+
+# 第 5 组 底纸重出（4 张）
+terrain.ground.plain
+terrain.ground.abyss
+terrain.ground.stoneForest
+terrain.ground.settlement
+
+# 第 4 组 拼图里的件
+filler.bush.0
+filler.bush.1
+filler.thorn
+filler.herbs
+filler.bamboo
+filler.deadwood
+filler.stump
+filler.log
+ground.piece.leaves
+ground.piece.petals
