@@ -19,7 +19,8 @@
     "filler.flowers.0",
     "filler.flowers.1",
     "filler.bush.0",
-    "filler.rock.0"
+    "filler.rock.0",
+    "filler.pine"
    ],
    "fillerCount": [
     4,
@@ -192,7 +193,8 @@
    "fillers": [
     "filler.bush.0",
     "filler.rock.1",
-    "filler.flowers.0"
+    "filler.flowers.0",
+    "filler.rock.2"
    ],
    "fillerCount": [
     3,
@@ -227,7 +229,8 @@
     "filler.rock.1",
     "filler.rock.0",
     "filler.tuft.1",
-    "filler.thorn"
+    "filler.thorn",
+    "filler.pine"
    ],
    "fillerCount": [
     3,
@@ -328,7 +331,8 @@
     "filler.tuft.0",
     "filler.tuft.1",
     "filler.flowers.1",
-    "filler.rock.0"
+    "filler.rock.0",
+    "filler.pine"
    ],
    "fillerCount": [
     4,
@@ -359,7 +363,8 @@
    "fillers": [
     "filler.flowers.0",
     "filler.flowers.1",
-    "filler.tuft.0"
+    "filler.tuft.0",
+    "filler.rock.2"
    ],
    "fillerCount": [
     5,
@@ -613,10 +618,15 @@
    "house.long.1"
   ],
   "shop": [
-   "house.shop.0"
+   "house.shop.0",
+   "house.shop.1"
   ],
   "tower": [
    "house.tower.0"
+  ],
+  "gate": [
+   "house.gate.0",
+   "house.gate.1"
   ],
   "hall": [
    "house.hall.0"

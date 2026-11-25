@@ -12,7 +12,7 @@
 | `content/region/terrain-art.json` | **渲染参数**（总监定的加载路径）。`content/base/art/region/terrain-art.json` 是同一份的拷贝：`RegionScene.preload` 现在读的是这个旧路径，加载器改完后可删 |
 | `content/base/art/region/region-terrain.{webp,json}` | 地形立牌，4096×2048 |
 | `content/base/art/region/region-detail.{webp,json}` | 填充小件 + 地面散件，2048×1024 |
-| `content/base/art/region/region-houses.{webp,json}` | 单栋房屋 + 前景小件 `loc.prop.*`（v1.4 从 terrain 挪来），2048×1024 |
+| `content/base/art/region/region-houses.{webp,json}` | 单栋房屋 + 前景小件 `loc.prop.*`（v1.4 从 terrain 挪来），**2048×2048**（第五批进来后 23 帧装不下 2048×1024，2026-11-25 放大；尺寸以图集 JSON 的 `size` 为准） |
 | `content/base/art/region/region-locations.{webp,json}` | 野外地点、奇遇标记与回退用的 `loc.village.0`，2048×1024（尺寸随内容变，专属地点进来再放大） |
 | `content/base/art/region/ground/ground.json` + `00-plain.webp` … `17-settlement.webp` + `ground-strip.webp` | 底纸数组：18 层，每层 768²，可平铺。另有一张竖向长图（768 × 768·18），一次请求、一次解码就能建 `DataArrayTexture` |
 | `content/base/art/art-manifest.json` | artKey → `{atlas, frame}` / `{array, layer}` 的总表 |

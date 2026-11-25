@@ -1632,7 +1632,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.23,
@@ -1651,7 +1651,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.29,
@@ -1670,7 +1670,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.33,
@@ -1689,7 +1689,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.33,
@@ -1708,7 +1708,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.2,
@@ -1727,7 +1727,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.2,
@@ -1746,7 +1746,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.3,
@@ -1765,7 +1765,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.3,
@@ -1784,7 +1784,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.33,
@@ -1803,7 +1803,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.35,
@@ -2420,7 +2420,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.28,
@@ -2439,7 +2439,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.28,
@@ -2458,7 +2458,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.27,
@@ -2477,7 +2477,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.33,
@@ -2496,7 +2496,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.34,
@@ -2515,7 +2515,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.3,
@@ -2534,7 +2534,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.31,
@@ -2553,7 +2553,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.45,
@@ -2572,7 +2572,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.5,
@@ -2591,7 +2591,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.45,
@@ -2610,7 +2610,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.5,
@@ -2629,7 +2629,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.5,
@@ -2648,7 +2648,7 @@
    "atlas": "region/region-houses",
    "atlasSize": [
     2048,
-    1024
+    2048
    ],
    "pxPerUnit": 768,
    "height": 0.55,

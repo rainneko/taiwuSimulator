@@ -22,7 +22,7 @@ interface AtlasSpec { file: string; size: [number, number]; owns: (name: string)
 export const ATLAS_SPECS: Readonly<Record<RegionAtlasId, AtlasSpec>> = {
   terrain: { file: 'region-terrain', size: [4096, 2048], owns: (n) => n.startsWith('terrain.standee.') },
   detail: { file: 'region-detail', size: [2048, 1024], owns: (n) => n.startsWith('filler.') || n.startsWith('ground.piece.') },
-  houses: { file: 'region-houses', size: [2048, 1024], owns: (n) => n.startsWith('house.') || n.startsWith('loc.prop.') },
+  houses: { file: 'region-houses', size: [2048, 2048], owns: (n) => n.startsWith('house.') || n.startsWith('loc.prop.') },
   locations: { file: 'region-locations', size: [2048, 1024], owns: (n) => n.startsWith('poi.') || (n.startsWith('loc.') && !n.startsWith('loc.prop.')) },
 };
 const IDS = Object.keys(ATLAS_SPECS) as RegionAtlasId[];

@@ -214,10 +214,14 @@ def verify_layout(frames: list[dict], aw: int, ah: int, padding: int, rep: al.Re
 def check_roundtrip(canvas: np.ndarray, path: Path, frames: list[dict], rep: al.Report, atlas_id: str) -> None:
     """WebP 编码后透明区的颜色是否还在（exact 选项失效时外扩会被清成黑色）。"""
     back = al.load_rgba(path)
-    x, y, w, h = frames[0]["rect"]
-    probe_y = y + h // 2
-    probe_x = min(x + w + 1, canvas.shape[1] - 1)
-    if back[probe_y, probe_x, 3] < 0.02 and canvas[probe_y, probe_x, :3].max() > 0.1 and back[probe_y, probe_x, :3].max() < 0.02:
+    # 统计所有帧矩形内「原本透明但做过颜色外扩」的像素，编码后颜色还在的比例（单点探针会落在外扩半径外的空白里误报）
+    m = np.zeros(canvas.shape[:2], bool)
+    for f in frames:
+        x, y, w, h = f["rect"]
+        m[y:y + h, x:x + w] = True
+    sel = m & (canvas[..., 3] < 0.02) & (canvas[..., :3].max(-1) > 0.1)
+    kept = (back[sel][:, :3].max(-1) > 0.02).mean() if sel.any() else 1.0
+    if kept < 0.5:
         rep.error(atlas_id, "WebP 外扩丢失", "编码后透明区的颜色被清零（本机 Pillow / libwebp 不支持 exact）；请加 --format png")
 
 

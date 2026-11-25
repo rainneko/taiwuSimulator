@@ -37,7 +37,7 @@ PX_SLOT = 768
 PX_HOUSE = 768            # 单栋房屋立牌的入库像素密度（px / 格），同地形立牌
 # v1.4：region-locations 现在只有驿站、废墟、奇遇标记与回退用的 loc.village.0（整张聚落立牌改为离线拼图），缩到 2048×1024；
 # 尺寸随内容变，专属地点（G 类）进来时再放大。
-ATLAS_SIZE = {ATLAS_TERRAIN: [4096, 2048], ATLAS_LOCATIONS: [2048, 1024], ATLAS_DETAIL: [2048, 1024], ATLAS_HOUSES: [2048, 1024], "province": [2048, 2048]}
+ATLAS_SIZE = {ATLAS_TERRAIN: [4096, 2048], ATLAS_LOCATIONS: [2048, 1024], ATLAS_DETAIL: [2048, 1024], ATLAS_HOUSES: [2048, 2048], "province": [2048, 2048]}
 GROUND_SIZE = 768          # 底纸数组每层边长（medium / low 档、开发期）；一层覆盖 2×2 格 → 384 texel / 格；长图 768×13824 < WebP 上限 16383
 GROUND_SIZE_HIGH = 1024    # high 档（v1.2）：512 texel / 格；只出逐层文件并转 KTX2，不出长图（1024×18 超过 WebP 上限）
 

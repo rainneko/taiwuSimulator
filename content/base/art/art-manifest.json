@@ -23,6 +23,10 @@
   "atlas": "region/region-detail",
   "frame": "filler.mushrooms"
  },
+ "filler.pine": {
+  "atlas": "region/region-detail",
+  "frame": "filler.pine"
+ },
  "filler.reeds": {
   "atlas": "region/region-detail",
   "frame": "filler.reeds"
@@ -34,6 +38,10 @@
  "filler.rock.1": {
   "atlas": "region/region-detail",
   "frame": "filler.rock.1"
+ },
+ "filler.rock.2": {
+  "atlas": "region/region-detail",
+  "frame": "filler.rock.2"
  },
  "filler.stump": {
   "atlas": "region/region-detail",
@@ -99,6 +107,14 @@
   "atlas": "region/region-houses",
   "frame": "house.cottage.2"
  },
+ "house.gate.0": {
+  "atlas": "region/region-houses",
+  "frame": "house.gate.0"
+ },
+ "house.gate.1": {
+  "atlas": "region/region-houses",
+  "frame": "house.gate.1"
+ },
  "house.hall.0": {
   "atlas": "region/region-houses",
   "frame": "house.hall.0"
@@ -115,6 +131,10 @@
   "atlas": "region/region-houses",
   "frame": "house.shop.0"
  },
+ "house.shop.1": {
+  "atlas": "region/region-houses",
+  "frame": "house.shop.1"
+ },
  "house.tile.0": {
   "atlas": "region/region-houses",
   "frame": "house.tile.0"
@@ -127,6 +147,14 @@
   "atlas": "region/region-houses",
   "frame": "house.tower.0"
  },
+ "loc.prop.banner": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.banner"
+ },
+ "loc.prop.dummy": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.dummy"
+ },
  "loc.prop.fence": {
   "atlas": "region/region-houses",
   "frame": "loc.prop.fence"
@@ -138,6 +166,14 @@
  "loc.prop.poles": {
   "atlas": "region/region-houses",
   "frame": "loc.prop.poles"
+ },
+ "loc.prop.rack": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.rack"
+ },
+ "loc.prop.stele": {
+  "atlas": "region/region-houses",
+  "frame": "loc.prop.stele"
  },
  "loc.prop.steps": {
   "atlas": "region/region-houses",
@@ -250,6 +286,10 @@
  "terrain.standee.cave.1": {
   "atlas": "region/region-terrain",
   "frame": "terrain.standee.cave.1"
+ },
+ "terrain.standee.cloud.0": {
+  "atlas": "region/region-terrain",
+  "frame": "terrain.standee.cloud.0"
  },
  "terrain.standee.farmland.0": {
   "atlas": "region/region-terrain",
