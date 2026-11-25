@@ -8,7 +8,7 @@ import { FRAMES, setFrameSizes } from './regionArt';
  * 输出 <basePath>/<id>.json（AtlasJson）+ 同目录下 json.image 指向的图片。
  * 逐帧回落：图集整张读不到 → 全用占位帧；JSON 里缺某帧 → 只把缺的那几帧从占位图集补进来。
  */
-export type RegionAtlasId = 'terrain' | 'detail' | 'houses' | 'locations';
+export type RegionAtlasId = 'terrain' | 'detail' | 'houses' | 'locations' | 'mountains';
 
 /** real = 全部来自真实图集；mixed = 真实图集 + 补了占位帧；placeholder = 整张退化为占位。 */
 export type AtlasSource = 'real' | 'mixed' | 'placeholder';
@@ -24,6 +24,7 @@ export const ATLAS_SPECS: Readonly<Record<RegionAtlasId, AtlasSpec>> = {
   detail: { file: 'region-detail', size: [2048, 1024], owns: (n) => n.startsWith('filler.') || n.startsWith('ground.piece.') },
   houses: { file: 'region-houses', size: [2048, 2048], owns: (n) => n.startsWith('house.') || n.startsWith('loc.prop.') },
   locations: { file: 'region-locations', size: [2048, 1024], owns: (n) => n.startsWith('poi.') || (n.startsWith('loc.') && !n.startsWith('loc.prop.')) },
+  mountains: { file: 'region-mountains', size: [2048, 2048], owns: (n) => n === 'terrain.standee.mountain.2' || n === 'terrain.standee.mountain.peak' },
 };
 const IDS = Object.keys(ATLAS_SPECS) as RegionAtlasId[];
 

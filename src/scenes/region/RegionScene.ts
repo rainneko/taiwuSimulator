@@ -449,7 +449,7 @@ export class RegionScene implements IScene {
   /** 阴影相机跟随可视范围（WO3 §3.11 简化版）：外扩 2 格，按纹素对齐。 */
   private fitShadow(): void {
     const cells = this.rig.cellsFor(this.rig.zoomLevel);
-    const half = cells * 0.5 + 2 + 1.2 + this.maxLevel * layerConfig.step;   // 外扩 2 格 + maxCasterHeight（含最高层）
+    const half = cells * 0.5 + 2 + 1.6 + this.maxLevel * layerConfig.step;   // 外扩 2 格 + maxCasterHeight（含主峰 1.5 + 余量）
     const sc = this.sun.shadow.camera, size = this.sun.shadow.mapSize.x;
     if (sc.right !== half) { sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.near = 0.5; sc.far = 60; sc.updateProjectionMatrix(); }
     const texel = (half * 2) / size, t = this.rig.target;
