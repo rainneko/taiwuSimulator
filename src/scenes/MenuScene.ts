@@ -304,21 +304,22 @@ export class MenuScene implements IScene {
       this.strips.push({ group, backMesh, artMesh1, artMesh2, textPanels });
     }
 
-    // -- Edge wave borders --
+    // -- Edge wave borders (both at same Y, overlapping the scroll bottom, scrolling in opposite horizontal directions) --
     const edgeTopTex = this.loadedTex.get('edgeTop');
     const edgeBotTex = this.loadedTex.get('edgeBottom');
+    const EDGE_Y = -1.0;
 
     if (edgeTopTex) {
       const mat = new MeshBasicMaterial({ map: edgeTopTex, transparent: true, depthWrite: false });
       this.edgeTop = makePlane(EDGE_W, EDGE_H, mat);
-      this.edgeTop.position.set(0, 5.5, STRIP_Z + 2);
+      this.edgeTop.position.set(0, EDGE_Y, STRIP_Z + 1.5);
       s.add(this.edgeTop);
       this.disposables.push(this.edgeTop.geometry, mat);
     }
     if (edgeBotTex) {
       const mat = new MeshBasicMaterial({ map: edgeBotTex, transparent: true, depthWrite: false });
       this.edgeBottom = makePlane(EDGE_W, EDGE_H, mat);
-      this.edgeBottom.position.set(0, -1.8, STRIP_Z + 2);
+      this.edgeBottom.position.set(0, EDGE_Y, STRIP_Z + 2);
       s.add(this.edgeBottom);
       this.disposables.push(this.edgeBottom.geometry, mat);
     }
@@ -709,14 +710,17 @@ export class MenuScene implements IScene {
       }
     }
 
-    // -- Edge wave bobbing --
+    // -- Edge wave: horizontal scroll (opposite dirs) + subtle vertical bob --
+    const EDGE_BASE_Y = -1.0;
     if (this.edgeTop) {
-      const baseY = 5.5;
-      this.edgeTop.position.y = baseY + Math.sin(this.time * EDGE_BOB_FREQ * Math.PI * 2) * EDGE_BOB_AMP;
+      this.edgeTop.position.x -= SCROLL_SPEED * 0.6 * dt;
+      if (this.edgeTop.position.x < -EDGE_W / 2) this.edgeTop.position.x += EDGE_W;
+      this.edgeTop.position.y = EDGE_BASE_Y + Math.sin(this.time * EDGE_BOB_FREQ * Math.PI * 2) * EDGE_BOB_AMP;
     }
     if (this.edgeBottom) {
-      const baseY = -1.8;
-      this.edgeBottom.position.y = baseY + Math.sin(this.time * EDGE_BOB_FREQ * Math.PI * 2 + Math.PI) * EDGE_BOB_AMP;
+      this.edgeBottom.position.x += SCROLL_SPEED * 0.4 * dt;
+      if (this.edgeBottom.position.x > EDGE_W / 2) this.edgeBottom.position.x -= EDGE_W;
+      this.edgeBottom.position.y = EDGE_BASE_Y + Math.sin(this.time * EDGE_BOB_FREQ * Math.PI * 2 + 1.5) * EDGE_BOB_AMP;
     }
 
     // -- Title fade (paper material fade uniform) --

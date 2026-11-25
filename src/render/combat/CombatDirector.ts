@@ -127,11 +127,11 @@ export class CombatDirector {
           break;
       }
     }
-    // 兜底：落脚点间距与逻辑距离对不上（漏了事件、初始化等）时两边各补一半
+    // 兜底：落脚点间距与逻辑距离对不上（漏了事件、初始化等）时用 shift 静默校正（不触发跳跃）
     const r = state.distance * PX_PER_DIST - this.homeGap;
-    if (Math.abs(r) > 0.5) {
-      this.motions[0].moveHome(-r / 2);
-      this.motions[1].moveHome(r / 2);
+    if (Math.abs(r) > 1) {
+      this.motions[0].shift(-r / 2);
+      this.motions[1].shift(r / 2);
     }
   }
 
